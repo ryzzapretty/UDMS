@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="100%" height="100%">
+  <defs>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f9d423" />
+      <stop offset="50%" stop-color="#e6a117" />
+      <stop offset="100%" stop-color="#b87309" />
+    </linearGradient>
+    <linearGradient id="blueGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#14213d" />
+      <stop offset="100%" stop-color="#09142b" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+
+  <!-- Golden Laurel Wreath (Left & Right) -->
+  <g fill="url(#goldGrad)" filter="url(#shadow)">
+    <!-- Left wreath leaves -->
+    <path d="M 52,145 C 30,120 30,75 56,48 C 58,54 56,60 51,64 C 42,73 40,90 46,104 C 52,118 63,128 66,138 Z" />
+    <path d="M 38,72 C 26,62 30,48 42,46 C 46,55 42,66 38,72 Z" />
+    <path d="M 33,96 C 20,90 22,76 34,72 C 39,81 37,92 33,96 Z" />
+    <path d="M 36,122 C 22,120 22,106 34,100 C 40,108 40,119 36,122 Z" />
+    <path d="M 48,144 C 36,146 32,132 44,124 C 50,131 51,142 48,144 Z" />
+    
+    <!-- Right wreath leaves -->
+    <path d="M 148,145 C 170,120 170,75 144,48 C 142,54 144,60 149,64 C 158,73 160,90 154,104 C 148,118 137,128 134,138 Z" />
+    <path d="M 162,72 C 174,62 170,48 158,46 C 154,55 158,66 162,72 Z" />
+    <path d="M 167,96 C 180,90 178,76 166,72 C 161,81 163,92 167,96 Z" />
+    <path d="M 164,122 C 178,120 178,106 166,100 C 160,108 160,119 164,122 Z" />
+    <path d="M 152,144 C 164,146 168,132 156,124 C 150,131 149,142 152,144 Z" />
+    
+    <!-- Stars at top -->
+    <polygon points="100,24 102,30 108,30 103,34 105,40 100,36 95,40 97,34 92,30 98,30" />
+    <polygon points="82,30 84,35 89,35 85,38 87,43 83,40 79,43 81,38 77,35 82,35" transform="rotate(-15 82 30)" />
+    <polygon points="118,30 120,35 125,35 121,38 123,43 119,40 115,43 117,38 113,35 118,35" transform="rotate(15 118 30)" />
+  </g>
+
+  <!-- Outer Ring (Gold rope/dash pattern) -->
+  <circle cx="100" cy="98" r="62" fill="none" stroke="url(#goldGrad)" stroke-width="3" stroke-dasharray="3,3" />
+  <circle cx="100" cy="98" r="58" fill="none" stroke="url(#goldGrad)" stroke-width="1.5" />
+
+  <!-- Center Circle (Dark Blue) -->
+  <circle cx="100" cy="98" r="55" fill="url(#blueGrad)" stroke="url(#goldGrad)" stroke-width="2" />
+
+  <!-- Torch of Knowledge -->
+  <g id="torch">
+    <!-- Flame -->
+    <path d="M 100,60 C 105,67 106,72 103,77 C 101,75 99,75 97,77 C 94,72 95,67 100,60 Z" fill="#ffd166" />
+    <path d="M 100,64 C 103,69 103,73 101,76 C 100,75 99,75 98,76 C 96,73 97,69 100,64 Z" fill="#ff4d4d" />
+    <!-- Torch handle -->
+    <path d="M 97,78 L 103,78 L 101,92 L 99,92 Z" fill="url(#goldGrad)" />
+  </g>
+
+  <!-- Open Book of Wisdom -->
+  <g id="book" fill="#ffffff" stroke="#14213d" stroke-width="1.5" stroke-linejoin="round">
+    <!-- Left page -->
+    <path d="M 98,92 C 86,90 73,92 68,95 L 68,118 C 73,115 86,113 98,115 Z" fill="#f8f9fa" />
+    <!-- Right page -->
+    <path d="M 102,92 C 114,90 127,92 132,95 L 132,118 C 127,115 114,113 102,115 Z" fill="#ffffff" />
+    <!-- Book lines (Left page) -->
+    <line x1="74" y1="99" x2="92" y2="97" stroke="#90a4ae" stroke-width="1" />
+    <line x1="74" y1="104" x2="92" y2="102" stroke="#90a4ae" stroke-width="1" />
+    <line x1="74" y1="109" x2="92" y2="107" stroke="#90a4ae" stroke-width="1" />
+    <!-- Book lines (Right page) -->
+    <line x1="108" y1="97" x2="126" y2="99" stroke="#90a4ae" stroke-width="1" />
+    <line x1="108" y1="102" x2="126" y2="104" stroke="#90a4ae" stroke-width="1" />
+    <line x1="108" y1="107" x2="126" y2="109" stroke="#90a4ae" stroke-width="1" />
+    <!-- Book Spine -->
+    <path d="M 98,115 C 100,116 100,116 102,115 L 102,92 C 100,93 100,93 98,92 Z" fill="url(#goldGrad)" stroke="none" />
+  </g>
+
+  <!-- Ribbon Banner (Bottom) -->
+  <g id="ribbon" filter="url(#shadow)">
+    <!-- Banner Ends -->
+    <path d="M 45,152 L 32,157 L 42,166 L 32,175 L 50,170 L 50,154 Z" fill="#09142b" />
+    <path d="M 155,152 L 168,157 L 158,166 L 168,175 L 150,170 L 150,154 Z" fill="#09142b" />
+    <!-- Ribbon Main Body -->
+    <path d="M 46,148 C 75,142 125,142 154,148 L 150,169 C 125,163 75,163 50,169 Z" fill="#14213d" stroke="url(#goldGrad)" stroke-width="2" />
+    <!-- Text on Ribbon -->
+    <text x="100" y="162" font-family="'Source Serif 4', Georgia, serif" font-size="15" font-weight="900" fill="#ffffff" text-anchor="middle" letter-spacing="3">UDMS</text>
+  </g>
+</svg>
