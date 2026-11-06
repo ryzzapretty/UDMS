@@ -19,4 +19,4 @@ document.querySelectorAll('.js-review').forEach(b=>b.addEventListener('click',()
 document.querySelectorAll('.js-copy').forEach(b=>b.addEventListener('click',()=>{
   navigator.clipboard.writeText(b.dataset.url).then(()=>flashMsg('success','Link copied. Only authorized users can open it.'),()=>Swal.fire({title:'Copy this link',input:'text',inputValue:b.dataset.url}));
 }));
-const sbtn=document.getElementById('sbtn');if(sbtn)sbtn.addEventListener('click',()=>document.getElementById('sb').classList.toggle('open'));
+const sbtn=document.getElementById('sbtn');const sb=document.getElementById('sb');if(sbtn&&sb){sbtn.addEventListener('click',()=>{const open=sb.classList.toggle('open');sbtn.setAttribute('aria-expanded',String(open));});document.addEventListener('keydown',e=>{if(e.key==='Escape'){sb.classList.remove('open');sbtn.setAttribute('aria-expanded','false');}});}

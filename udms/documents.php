@@ -1,7 +1,17 @@
 <?php require_once 'config.php'; require_role('Admin','Faculty','Student'); $u=me(); $r=$u['role'];
-$v=defined('SEARCH_PAGE')?'search':($_GET['v']??'all'); if(!in_array($v,['all','mine','pending','submissions','shared','archive','search'],true)) $v='all';
+$v=defined('SEARCH_PAGE')?'search':($_GET['v']??'all'); if(!in_array($v,['all','mine','pending','submissions','shared','archive','search','student_requests'],true)) $v='all';
 [$vis,$w_p]=visible_sql($u); $w=[$vis]; $p=$w_p; $adm=$r==='Admin';
+if($v==='student_requests'){
+  if(!in_array($r,['Faculty','Admin'],true)) forbid('Only staff and administrators can review student requests.');
+  $w=["d.status='Pending Review'","u.role='Student'"]; $p=[];
+  if($r==='Faculty'){
+    if(empty($u['department_id'])) { $w[]='1=0'; }
+    else { $w[]='d.department_id=:staff_department'; $p[':staff_department']=$u['department_id']; }
+  }
+}
+
 switch($v){
+ case 'student_requests': $t='Student Document Requests'; break;
  case 'mine': $t='My Documents'; $w[]="d.uploaded_by=:me"; $p[':me']=$u['id']; $w[]="d.status<>'Archived'"; break;
  case 'pending': $t=$adm?'Pending Reviews':'Pending Documents'; if($adm) $w[]="d.status='Pending Review'"; else { $w[]="d.uploaded_by=:me"; $p[':me']=$u['id']; $w[]="d.status IN ('Pending Review','Returned for Revision')"; } break;
  case 'submissions': $t='My Submissions'; $w[]="d.uploaded_by=:me"; $p[':me']=$u['id']; $w[]="d.status NOT IN ('Draft','Archived')"; break;
@@ -38,7 +48,7 @@ include 'includes/header.php'; ?>
 <div class="card border-0 shadow-sm"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead><tr><th>Document ID</th><th>Title</th><th>Type</th><th>Department</th><th>Uploaded By</th><th>Status</th><th>Version</th><th>Updated</th><th class="text-end">Action</th></tr></thead><tbody>
 <?php foreach($rows as $d): ?><tr><td class="text-nowrap"><?=e($d['document_id'])?></td><td><a href="document_view.php?id=<?=$d['id']?>" class="fw-semibold text-decoration-none"><?=e($d['title'])?></a><div class="small text-muted"><?=e($d['category_name']?:'Uncategorized')?></div></td>
  <td><?=e($d['document_type'])?></td><td><?=e($d['department_name']?:'—')?></td><td><?=e($d['uploader'])?></td><td><?=badge($d['status'])?></td><td>v<?=e($d['current_version'])?></td><td class="small text-nowrap"><?=dt($d['updated_at'])?></td>
- <td class="text-end text-nowrap"><a class="btn btn-sm btn-outline-primary" href="document_view.php?id=<?=$d['id']?>">View</a>
+ <td class="text-end text-nowrap"><a class="btn btn-sm btn-outline-primary" href="document_view.php?id=<?=$d['id']?>"><?= $v==='student_requests' ? 'Review Request' : 'View' ?></a>
   <a class="btn btn-sm btn-outline-secondary" href="download.php?id=<?=$d['id']?>" title="Download"><i class="bi bi-download"></i></a>
   <?php if($adm&&$d['status']==='Archived'){ echo post_btn('restore',$d['id'],'Restore','btn-outline-success','Restore this document to the active list?'); } ?></td></tr>
 <?php endforeach; if(!$rows): ?><tr><td colspan="9" class="text-center text-muted py-5"><i class="bi bi-folder-x fs-2 d-block"></i>No documents match. Try clearing the filters<?=$v==='mine'?' or upload a document':''?>.</td></tr><?php endif; ?></tbody></table></div>

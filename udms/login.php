@@ -1,670 +1,1116 @@
+
 <?php
-// UDMS - St. Clare College of Caloocan
-// Complete landing page with interactive features.
-// Get Started redirects to login.php.
+require_once __DIR__ . '/config.php';
+
+if (me()) redirect('dashboard.php');
+
+$error = "";
+$username = "";
+
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    $username = trim($_POST["username"] ?? "");
+    $password = $_POST["password"] ?? "";
+
+    if ($username === "" || $password === "") {
+        $error = "Please enter your username and password.";
+    } else {
+        csrf_check();
+
+        try {
+            $user = q(
+                "SELECT id, username, password, role, status FROM users WHERE username=? OR email=? LIMIT 1",
+                [$username, $username]
+            )->fetch();
+
+            if (!$user || !password_verify($password, $user['password'])) {
+                $error = "Invalid username/email or password.";
+            } elseif ($user['status'] !== 'Active') {
+                $error = $user['status'] === 'Pending'
+                    ? "Your account is pending administrator approval."
+                    : "Your account is inactive. Please contact an administrator.";
+            } elseif (!in_array($user['role'], ['Admin', 'Faculty', 'Student'], true)) {
+                $error = "This account does not have access to UDMS.";
+            } else {
+                session_regenerate_id(true);
+                $_SESSION['uid'] = (int)$user['id'];
+                $_SESSION['csrf'] = bin2hex(random_bytes(32));
+                log_act('User logged in', null, $user['username'] . ' logged in', (int)$user['id']);
+                redirect('dashboard.php');
+            }
+        } catch (PDOException $e) {
+            $error = "Unable to sign in right now. Please check the database connection and try again.";
+        }
+    }
+}
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UDMS | St. Clare College of Caloocan</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <style>
-        * {
-            box-sizing: border-box;
-        }
+<title>Login | UDMS - St. Clare College of Caloocan</title>
 
-        html {
-            scroll-behavior: smooth;
-        }
 
-        body {
-            margin: 0;
-            background: #05265d;
-            font-family: Arial, sans-serif;
-        }
+<style>
 
-        .page {
-            position: relative;
-            max-width: 1024px;
-            margin: auto;
-        }
+/* =========================
+   GENERAL
+========================= */
 
-        .page-image {
-            width: 100%;
-            display: block;
-        }
+:root {
+    --navy: #00245c;
+    --deep-blue: #001b49;
+    --gold: #ffd139;
+    --white: #ffffff;
+}
 
-        /* Clickable screenshot elements */
-        .click {
-            position: absolute;
-            z-index: 5;
-            background: transparent;
-            border: 0;
-            padding: 0;
-            cursor: pointer;
-        }
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
 
-        .click:focus-visible {
-            outline: 3px solid #ffcc32;
-        }
+html {
+    scroll-behavior: smooth;
+}
 
-        .home {
-            left: 41%;
-            top: 1%;
-            width: 9%;
-            height: 3%;
-        }
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    min-height: 100vh;
+    background: var(--deep-blue);
+}
 
-        .about {
-            left: 52%;
-            top: 1%;
-            width: 9%;
-            height: 3%;
-        }
+/* =========================
+   MAIN PAGE
+========================= */
 
-        .faq-nav {
-            left: 62%;
-            top: 1%;
-            width: 9%;
-            height: 3%;
-        }
+.login-page {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 
-        .contact {
-            left: 71%;
-            top: 1%;
-            width: 10%;
-            height: 3%;
-        }
+    background-image:
+        linear-gradient(
+            90deg,
+            rgba(0, 47, 112, 0.08),
+            rgba(0, 47, 112, 0.02)
+        ),
+        url("assets/St. Clare College Campus Banner.png");
 
-        .login {
-            left: 86%;
-            top: 1%;
-            width: 11%;
-            height: 3%;
-        }
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+}
 
-        .get-started {
-            left: 5%;
-            top: 23%;
-            width: 19%;
-            height: 3.4%;
-        }
+/* =========================
+   HEADER
+========================= */
 
-        .learn-more {
-            left: 34%;
-            top: 49.5%;
-            width: 16%;
-            height: 3%;
-        }
+.header {
+    position: relative;
+    z-index: 5;
 
-        /* FAQ positions */
-        .faq-click {
-            left: 30%;
-            width: 66%;
-            height: 2.5%;
-        }
+    background: linear-gradient(
+        110deg,
+        #001b49,
+        #00316d,
+        #001c4c
+    );
 
-        .faq1 {
-            top: 60.5%;
-        }
+    min-height: 95px;
 
-        .faq2 {
-            top: 63.3%;
-        }
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 
-        .faq3 {
-            top: 66.1%;
-        }
+    padding: 10px 4%;
+    gap: 20px;
 
-        .faq4 {
-            top: 68.9%;
-        }
+    border-bottom: 5px solid var(--gold);
+}
 
-        .faq5 {
-            top: 71.7%;
-        }
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 18px;
 
-        /* Footer navigation */
-        .footer-home {
-            left: 36%;
-            top: 92%;
-            width: 5%;
-            height: 2%;
-        }
+    text-decoration: none;
+    color: white;
+}
 
-        .footer-about {
-            left: 42%;
-            top: 92%;
-            width: 5%;
-            height: 2%;
-        }
+.brand-logo {
+    width: 85px;
+    height: 78px;
+    object-fit: contain;
+}
 
-        .footer-faq {
-            left: 48%;
-            top: 92%;
-            width: 5%;
-            height: 2%;
-        }
+.brand-info {
+    padding-left: 20px;
+    border-left: 2px solid white;
+}
 
-        .footer-contact {
-            left: 54%;
-            top: 92%;
-            width: 7%;
-            height: 2%;
-        }
+.brand-info h1 {
+    font-size: 36px;
+    font-weight: 800;
+    letter-spacing: 1px;
+}
 
-        /* FAQ popup */
-        .faq-modal {
-            position: fixed;
-            inset: 0;
-            z-index: 200;
-            background: rgba(0, 20, 55, .75);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
+.brand-info p {
+    font-size: 14px;
+    margin-top: 2px;
+}
 
-        .faq-modal.open {
-            display: flex;
-        }
+.nav-links {
+    display: flex;
+    align-items: center;
+    gap: 30px;
+}
 
-        .faq-box {
-            background: white;
-            color: #05265d;
-            padding: 28px;
-            width: 500px;
-            max-width: 100%;
-            border-radius: 16px;
-            box-shadow: 0 15px 35px #00163770;
-        }
+.nav-links a {
+    color: white;
+    font-size: 15px;
+    text-decoration: none;
 
-        .faq-box h2 {
-            margin-top: 0;
-            font-size: 22px;
-        }
+    display: flex;
+    align-items: center;
+    gap: 9px;
 
-        .faq-box p {
-            line-height: 1.7;
-        }
+    transition: 0.2s;
+}
 
-        .faq-box button {
-            border: none;
-            border-radius: 25px;
-            padding: 12px 25px;
-            color: white;
-            background: #05265d;
-            cursor: pointer;
-        }
+.nav-links a:hover {
+    color: var(--gold);
+}
 
-        /* Chatbot */
-        .robot {
-            position: fixed;
-            right: 22px;
-            bottom: 22px;
-            z-index: 101;
-            width: 72px;
-            height: 72px;
-            border-radius: 50%;
-            border: 3px solid #ffcc32;
-            background: linear-gradient(135deg, #1685ff, #05265d);
-            font-size: 38px;
-            cursor: pointer;
-            box-shadow: 0 8px 25px #001a4a70;
-        }
+.nav-icon {
+    font-size: 20px;
+}
 
-        .chatbot {
-            position: fixed;
-            right: 20px;
-            bottom: 105px;
-            z-index: 100;
-            width: 350px;
-            max-width: calc(100vw - 30px);
-            height: 465px;
-            max-height: calc(100vh - 125px);
-            background: white;
-            border-radius: 18px;
-            overflow: hidden;
-            display: none;
-            flex-direction: column;
-            box-shadow: 0 12px 35px #00163770;
-        }
+/* =========================
+   GOLD CURVE BELOW HEADER
+========================= */
 
-        .chatbot.open {
-            display: flex;
-        }
+.header-curve {
+    position: absolute;
+    top: 83px;
+    left: 0;
 
-        .chat-header {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            background: linear-gradient(110deg, #0755c9, #05265d);
-            color: white;
-            padding: 14px;
-        }
+    width: 100%;
+    height: 85px;
 
-        .chat-avatar {
-            font-size: 30px;
-        }
+    z-index: 4;
+    pointer-events: none;
+}
 
-        .chat-title {
-            flex: 1;
-            font-weight: bold;
-            font-size: 14px;
-        }
+.header-curve svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
 
-        .chat-title small {
-            display: block;
-            color: #a5f0b5;
-            font-size: 11px;
-            margin-top: 4px;
-        }
+/* =========================
+   MAIN LOGIN AREA
+========================= */
 
-        .chat-close {
-            background: transparent;
-            color: white;
-            border: none;
-            font-size: 24px;
-            cursor: pointer;
-        }
+.main-content {
+    position: relative;
+    z-index: 3;
 
-        .chat-messages {
-            flex: 1;
-            overflow-y: auto;
-            background: #f5f9ff;
-            padding: 12px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
+    flex: 1;
+    width: min(1500px, 100%);
+    margin: 0 auto;
 
-        .message {
-            padding: 11px 13px;
-            border-radius: 14px;
-            font-size: 13px;
-            line-height: 1.5;
-            max-width: 90%;
-            overflow-wrap: anywhere;
-        }
+    display: flex;
+    align-items: center;
 
-        .message.bot {
-            background: #dceaff;
-            color: #05265d;
-            align-self: flex-start;
-        }
+    padding: 55px 8% 95px;
+}
 
-        .message.user {
-            background: #0755c9;
-            color: white;
-            align-self: flex-end;
-        }
+/* =========================
+   COMPACT LOGIN PANEL
+========================= */
 
-        .suggestions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            padding: 10px;
-        }
+.login-card {
+    width: 570px;
+    max-width: 100%;
 
-        .suggestions button {
-            border: 1px solid #b8d4ff;
-            background: white;
-            color: #05265d;
-            border-radius: 20px;
-            padding: 7px 9px;
-            font-size: 11px;
-            cursor: pointer;
-        }
+    background: rgba(240, 248, 255, 0.94);
 
-        .chat-form {
-            display: flex;
-            gap: 8px;
-            padding: 10px;
-            border-top: 1px solid #dce7f7;
-        }
+    border: 1px solid rgba(255, 255, 255, 0.85);
+    border-radius: 25px;
 
-        .chat-form input {
-            flex: 1;
-            min-width: 0;
-            padding: 11px;
-            border: 1px solid #bfd6f7;
-            border-radius: 25px;
-            outline: none;
-        }
+    box-shadow:
+        0 15px 35px rgba(0, 31, 79, 0.24),
+        inset 0 1px 0 rgba(255, 255, 255, 0.8);
 
-        .chat-form button {
-            border: none;
-            border-radius: 50%;
-            background: #05265d;
-            color: white;
-            width: 40px;
-            cursor: pointer;
-        }
+    backdrop-filter: blur(8px);
+    overflow: hidden;
+}
 
-        .back-top {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            z-index: 50;
-            width: 44px;
-            height: 44px;
-            background: #05265d;
-            color: white;
-            border: 2px solid white;
-            border-radius: 50%;
-            font-size: 22px;
-            cursor: pointer;
-        }
+/* =========================
+   CARD CONTENT
+========================= */
 
-        @media (max-width: 600px) {
-            .robot {
-                width: 60px;
-                height: 60px;
-                font-size: 32px;
-                right: 12px;
-                bottom: 12px;
-            }
+.card-content {
+    padding: 22px 30px 0;
+}
 
-            .chatbot {
-                right: 10px;
-                bottom: 85px;
-                width: calc(100vw - 20px);
-            }
-        }
-    </style>
+/* =========================
+   LOGO AND HEADING
+========================= */
+
+.card-heading {
+    display: grid;
+    grid-template-columns: 140px 2px minmax(0, 1fr);
+    align-items: center;
+    gap: 18px;
+}
+
+.card-logo {
+    width: 140px;
+    height: 140px;
+    object-fit: contain;
+}
+
+.heading-divider {
+    height: 125px;
+    background: #082b64;
+}
+
+.heading-text {
+    min-width: 0;
+}
+
+.heading-text h2 {
+    font-size: 23px;
+    line-height: 1.1;
+    font-weight: 900;
+    color: #08295f;
+    overflow-wrap: break-word;
+}
+
+.heading-text p {
+    font-size: 15px;
+    font-style: italic;
+    margin-top: 10px;
+    color: #092e66;
+    white-space: normal;
+}
+
+/* =========================
+   CARD DIVIDER
+========================= */
+
+.card-line {
+    height: 2px;
+    background: #b6d2ec;
+    margin: 14px 0;
+}
+
+/* =========================
+   LOGIN FORM
+========================= */
+
+.login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* =========================
+   INPUT BOX
+========================= */
+
+.input-box {
+    display: flex;
+    align-items: center;
+
+    height: 50px;
+
+    border: 1.5px solid #b4cde7;
+    border-radius: 12px;
+
+    background: rgba(255, 255, 255, 0.87);
+
+    overflow: hidden;
+    transition: 0.2s;
+}
+
+.input-box:focus-within {
+    border-color: #0864cc;
+
+    box-shadow:
+        0 0 0 3px rgba(0, 96, 208, 0.12);
+}
+
+/* =========================
+   INPUT ICON
+========================= */
+
+.input-icon {
+    width: 65px;
+    height: 30px;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    flex-shrink: 0;
+
+    border-right: 2px solid #cad9e8;
+    color: #002b69;
+}
+
+.input-icon svg {
+    width: 24px;
+    height: 24px;
+    fill: currentColor;
+}
+
+/* =========================
+   INPUT TEXT
+========================= */
+
+.input-box input {
+    width: 100%;
+    min-width: 0;
+
+    border: none;
+    outline: none;
+    background: transparent;
+
+    padding: 0 15px;
+
+    font-size: 16px;
+    color: #092b61;
+}
+
+.input-box input::placeholder {
+    color: #395474;
+    opacity: 1;
+}
+
+/* =========================
+   SHOW PASSWORD BUTTON
+========================= */
+
+.show-password {
+    border: none;
+    background: transparent;
+
+    color: #002b69;
+
+    padding: 0 14px;
+
+    font-size: 20px;
+    font-weight: bold;
+
+    cursor: pointer;
+}
+
+.show-password:hover {
+    color: #0864cc;
+}
+
+/* =========================
+   LOGIN BUTTON
+========================= */
+
+.login-btn {
+    width: 100%;
+    height: 52px;
+
+    border: none;
+    border-radius: 12px;
+
+    background: linear-gradient(
+        90deg,
+        #00265c,
+        #001d4c
+    );
+
+    color: white;
+
+    font-size: 21px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.login-btn:hover {
+    background: #0759bc;
+    transform: translateY(-2px);
+}
+
+/* =========================
+   SECURITY LABEL
+========================= */
+
+.security-label {
+    text-align: center;
+
+    color: #09295e;
+
+    font-size: 15px;
+    font-weight: 700;
+
+    padding: 10px 0 8px;
+}
+
+/* =========================
+   ERROR MESSAGE
+========================= */
+
+.error-message {
+    color: #a21c1c;
+    background: #fff1f1;
+
+    border: 1px solid #efb4b4;
+    border-radius: 10px;
+
+    padding: 10px 12px;
+    margin-bottom: 12px;
+
+    font-size: 13px;
+}
+
+/* =========================
+   CARD BOTTOM DECORATION
+========================= */
+
+.card-bottom {
+    position: relative;
+
+    height: 65px;
+
+    background: linear-gradient(
+        180deg,
+        rgba(208, 232, 255, 0.2),
+        rgba(123, 189, 249, 0.42)
+    );
+
+    border-top: 1px solid #d7e9f9;
+    overflow: hidden;
+}
+
+.building-art {
+    position: absolute;
+
+    bottom: -10px;
+    left: 50%;
+
+    transform: translateX(-50%);
+
+    width: 95%;
+    height: 75px;
+
+    opacity: 0.72;
+}
+
+.building-art svg {
+    width: 100%;
+    height: 100%;
+}
+
+/* =========================
+   BOTTOM BLUE AND GOLD WAVE
+========================= */
+
+.bottom-wave {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+
+    width: 100%;
+    height: 135px;
+
+    z-index: 2;
+    pointer-events: none;
+}
+
+.bottom-wave svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+/* =========================
+   RESPONSIVE TABLET
+========================= */
+
+@media (max-width: 1000px) {
+
+    .header {
+        padding: 10px 3%;
+    }
+
+    .brand-logo {
+        width: 75px;
+        height: 70px;
+    }
+
+    .brand-info h1 {
+        font-size: 30px;
+    }
+
+    .brand-info p {
+        font-size: 12px;
+    }
+
+    .nav-links {
+        gap: 15px;
+    }
+
+    .nav-links a {
+        font-size: 14px;
+    }
+
+    .main-content {
+        padding: 65px 5% 110px;
+    }
+}
+
+/* =========================
+   RESPONSIVE MOBILE
+========================= */
+
+@media (max-width: 700px) {
+
+    .header {
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        padding: 12px;
+    }
+
+    .brand {
+        gap: 12px;
+    }
+
+    .brand-logo {
+        width: 65px;
+        height: 60px;
+    }
+
+    .brand-info {
+        padding-left: 15px;
+    }
+
+    .brand-info h1 {
+        font-size: 27px;
+    }
+
+    .brand-info p {
+        font-size: 11px;
+    }
+
+    .nav-links {
+        width: 100%;
+        justify-content: center;
+        gap: 22px;
+    }
+
+    .nav-links a {
+        font-size: 13px;
+    }
+
+    .header-curve {
+        display: none;
+    }
+
+    .main-content {
+        justify-content: center;
+        padding: 35px 15px 105px;
+    }
+
+    .login-card {
+        width: 100%;
+        border-radius: 22px;
+    }
+
+    .card-content {
+        padding: 18px 18px 0;
+    }
+
+    .card-heading {
+        grid-template-columns: 90px 2px minmax(0, 1fr);
+        gap: 12px;
+    }
+
+    .card-logo {
+        width: 90px;
+        height: 95px;
+    }
+
+    .heading-divider {
+        height: 90px;
+    }
+
+    .heading-text h2 {
+        font-size: 17px;
+        line-height: 1.1;
+    }
+
+    .heading-text p {
+        font-size: 12px;
+        margin-top: 7px;
+        white-space: normal;
+    }
+
+    .input-box {
+        height: 48px;
+    }
+
+    .input-icon {
+        width: 55px;
+    }
+
+    .input-icon svg {
+        width: 22px;
+        height: 22px;
+    }
+
+    .input-box input {
+        font-size: 15px;
+        padding: 0 12px;
+    }
+
+    .login-btn {
+        height: 50px;
+        font-size: 19px;
+    }
+
+    .security-label {
+        font-size: 13px;
+    }
+
+    .card-bottom {
+        height: 60px;
+    }
+
+    .building-art {
+        height: 70px;
+    }
+
+    .bottom-wave {
+        height: 100px;
+    }
+}
+
+/* =========================
+   SMALL MOBILE SCREENS
+========================= */
+
+@media (max-width: 390px) {
+
+    .card-heading {
+        grid-template-columns: 75px 2px minmax(0, 1fr);
+        gap: 9px;
+    }
+
+    .card-logo {
+        width: 75px;
+        height: 85px;
+    }
+
+    .heading-divider {
+        height: 80px;
+    }
+
+    .heading-text h2 {
+        font-size: 15px;
+    }
+
+    .heading-text p {
+        font-size: 11px;
+    }
+
+    .card-content {
+        padding: 15px 14px 0;
+    }
+
+    .input-icon {
+        width: 48px;
+    }
+
+    .input-box input {
+        font-size: 14px;
+        padding: 0 9px;
+    }
+
+    .nav-links {
+        gap: 15px;
+    }
+}
+
+</style>
+
 </head>
 
 <body>
 
-    <main class="page" id="home">
+<div class="login-page">
 
-        <!-- Your exact landing page screenshot -->
-        <img class="page-image" src="assets/udms-landing-design.png" alt="UDMS Landing Page">
+    <!-- HEADER -->
 
-        <!-- Navigation -->
-        <a class="click home" href="#home" aria-label="Home"></a>
+    <header class="header">
 
-        <a class="click about" href="#about" aria-label="About"></a>
+        <a href="landingpage.php" class="brand">
 
-        <a class="click faq-nav" href="#faqs" aria-label="FAQs"></a>
+            <img
+                class="brand-logo"
+                src="assets/udms-logo.png"
+                alt="UDMS Logo"
+            >
 
-        <a class="click contact" href="#contact" aria-label="Contact"></a>
+            <div class="brand-info">
 
-        <a class="click login" href="login.php" aria-label="Login"></a>
+                <h1>UDMS</h1>
 
-        <!-- Get Started redirects to Login -->
-        <a class="click get-started" href="login.php" aria-label="Get Started"></a>
+                <p>St. Clare College of Caloocan</p>
 
-        <!-- Learn More -->
-        <a class="click learn-more" href="#faqs" aria-label="Learn More"></a>
+            </div>
 
-        <!-- FAQ buttons -->
-        <button class="click faq-click faq1" onclick="showFAQ(0)" aria-label="Who can use UDMS?"></button>
+        </a>
 
-        <button class="click faq-click faq2" onclick="showFAQ(1)" aria-label="How do I upload a document?"></button>
+        <nav class="nav-links">
 
-        <button class="click faq-click faq3" onclick="showFAQ(2)" aria-label="Is my data secure?"></button>
+            <a href="landingpage.php">
+                <span class="nav-icon">⌂</span>
+                Home
+            </a>
 
-        <button class="click faq-click faq4" onclick="showFAQ(3)" aria-label="What if I encounter an issue?"></button>
+            <a href="landingpage.php#about">
+                <span class="nav-icon">●</span>
+                About
+            </a>
 
-        <button class="click faq-click faq5" onclick="showFAQ(4)" aria-label="Can I access UDMS on mobile?"></button>
+            <a href="landingpage.php#contact">
+                <span class="nav-icon">✉</span>
+                Contact
+            </a>
 
-        <!-- Footer links -->
-        <a class="click footer-home" href="#home" aria-label="Home"></a>
+        </nav>
 
-        <a class="click footer-about" href="#about" aria-label="About"></a>
+    </header>
 
-        <a class="click footer-faq" href="#faqs" aria-label="FAQs"></a>
+    <!-- HEADER CURVE -->
 
-        <a class="click footer-contact" href="#contact" aria-label="Contact"></a>
+    <div class="header-curve">
 
-        <!-- Scroll targets -->
-        <span id="about" style="position:absolute;top:37%;"></span>
+        <svg viewBox="0 0 1600 100"
+             preserveAspectRatio="none"
+             aria-hidden="true">
 
-        <span id="faqs" style="position:absolute;top:56%;"></span>
+            <path
+                d="M0,75 C330,20 610,85 950,25
+                   C1200,-12 1400,0 1600,-10"
+                stroke="#ffd139"
+                stroke-width="20"
+                fill="none"
+            />
 
-        <span id="contact" style="position:absolute;top:90%;"></span>
+            <path
+                d="M0,55 C330,0 610,65 950,5
+                   C1200,-32 1400,-20 1600,-30"
+                stroke="#00265c"
+                stroke-width="35"
+                fill="none"
+            />
+
+        </svg>
+
+    </div>
+
+    <!-- MAIN CONTENT -->
+
+    <main class="main-content">
+
+        <section class="login-card">
+
+            <div class="card-content">
+
+                <div class="card-heading">
+
+                    <img
+                        class="card-logo"
+                        src="assets/udms-logo.png"
+                        alt="University Document Management System"
+                    >
+
+                    <div class="heading-divider"></div>
+
+                    <div class="heading-text">
+
+                        <h2>
+                            UNIVERSITY<br>
+                            DOCUMENT<br>
+                            MANAGEMENT SYSTEM<br>
+                            (UDMS)
+                        </h2>
+
+                        <p>
+                            Manage • Access • Share
+                        </p>
+
+                    </div>
+
+                </div>
+
+                <div class="card-line"></div>
+
+                <?php if ($error !== ""): ?>
+
+                    <div class="error-message" role="alert">
+                        <?php
+                        echo htmlspecialchars(
+                            $error,
+                            ENT_QUOTES,
+                            "UTF-8"
+                        );
+                        ?>
+                    </div>
+
+                <?php endif; ?>
+
+                <!-- LOGIN FORM -->
+
+                <form
+                    class="login-form"
+                    method="POST"
+                    action="login.php"
+                >
+                    <?php echo csrf_field(); ?>
+
+                    <!-- USERNAME -->
+
+                    <div class="input-box">
+
+                        <span class="input-icon">
+
+                            <svg viewBox="0 0 24 24"
+                                 aria-hidden="true">
+
+                                <circle cx="12" cy="7" r="4"/>
+
+                                <path d="M4 22v-3c0-4 3-6 8-6s8 2 8 6v3z"/>
+
+                            </svg>
+
+                        </span>
+
+                        <input
+                            type="text"
+                            name="username"
+                            placeholder="Username or Email"
+                            aria-label="Username or Email"
+                            autocomplete="username"
+                            value="<?php echo htmlspecialchars($username, ENT_QUOTES, 'UTF-8'); ?>"
+                            required
+                        >
+
+                    </div>
+
+                    <!-- PASSWORD -->
+
+                    <div class="input-box">
+
+                        <span class="input-icon">
+
+                            <svg viewBox="0 0 24 24"
+                                 aria-hidden="true">
+
+                                <path d="M7 10V7a5 5 0 0 1 10 0v3h2v12H5V10h2zm2 0h6V7a3 3 0 0 0-6 0v3z"/>
+
+                            </svg>
+
+                        </span>
+
+                        <input
+                            type="password"
+                            id="password"
+                            name="password"
+                            placeholder="Password"
+                            aria-label="Password"
+                            autocomplete="current-password"
+                            required
+                        >
+
+                        <button
+                            class="show-password"
+                            type="button"
+                            id="togglePassword"
+                            aria-label="Show password"
+                        >
+                            ◉
+                        </button>
+
+                    </div>
+
+                    <!-- LOGIN BUTTON -->
+
+                    <button
+                        type="submit"
+                        class="login-btn"
+                    >
+                        ⇥ LOGIN
+                    </button>
+
+                </form>
+
+                <div class="security-label">
+                    🛡 Secure &amp; Trusted System
+                </div>
+
+            </div>
+
+            <!-- DECORATIVE CAMPUS ART -->
+
+            <div class="card-bottom">
+
+                <div class="building-art">
+
+                    <svg
+                        viewBox="0 0 700 110"
+                        preserveAspectRatio="xMidYMax meet"
+                        aria-hidden="true"
+                    >
+
+                        <g
+                            fill="none"
+                            stroke="#1765bb"
+                            stroke-width="2"
+                        >
+
+                            <path d="M0 100H700"/>
+
+                            <path d="M110 100V45H250V100"/>
+                            <path d="M130 45V25H230V45"/>
+                            <path d="M145 25L180 8L215 25"/>
+
+                            <path d="M270 100V32H430V100"/>
+                            <path d="M290 32V18H410V32"/>
+                            <path d="M315 18L350 3L385 18"/>
+
+                            <path d="M450 100V45H590V100"/>
+                            <path d="M470 45V25H570V45"/>
+                            <path d="M485 25L520 8L555 25"/>
+
+                            <path d="M160 100V65H200V100"/>
+                            <path d="M330 100V58H370V100"/>
+                            <path d="M500 100V65H540V100"/>
+
+                            <path d="M20 100V55M40 100V42M60 100V58"/>
+                            <path d="M630 100V58M650 100V42M680 100V55"/>
+
+                            <circle cx="40" cy="32" r="20"/>
+                            <circle cx="650" cy="32" r="20"/>
+
+                        </g>
+
+                        <g
+                            fill="#b7ddff"
+                            stroke="#1765bb"
+                            stroke-width="1.5"
+                        >
+
+                            <rect x="125" y="55" width="18" height="18"/>
+                            <rect x="215" y="55" width="18" height="18"/>
+
+                            <rect x="290" y="43" width="20" height="20"/>
+                            <rect x="390" y="43" width="20" height="20"/>
+
+                            <rect x="465" y="55" width="18" height="18"/>
+                            <rect x="555" y="55" width="18" height="18"/>
+
+                        </g>
+
+                    </svg>
+
+                </div>
+
+            </div>
+
+        </section>
 
     </main>
 
-    <!-- FAQ popup -->
-    <div class="faq-modal" id="faqModal" role="dialog" aria-modal="true" aria-labelledby="faqTitle">
+    <!-- BOTTOM BLUE AND GOLD WAVE -->
 
-        <div class="faq-box">
-            <h2 id="faqTitle"></h2>
-            <p id="faqAnswer"></p>
+    <div class="bottom-wave">
 
-            <button type="button" onclick="closeFAQ()">
-                Close
-            </button>
-        </div>
+        <svg viewBox="0 0 1600 160"
+             preserveAspectRatio="none"
+             aria-hidden="true">
 
-    </div>
+            <path
+                d="M0,80 C400,190 1100,155 1600,35
+                   L1600,160 L0,160 Z"
+                fill="#ffd139"
+            />
 
-    <!-- Floating robot -->
-    <button class="robot" id="robotButton" type="button" aria-label="Open UDMS Assistant" aria-expanded="false">
-        🤖
-    </button>
+            <path
+                d="M0,100 C400,195 1100,165 1600,65
+                   L1600,160 L0,160 Z"
+                fill="#07448f"
+            />
 
-    <!-- Chatbot -->
-    <div class="chatbot" id="chatbot">
+            <path
+                d="M0,118 C450,205 1100,175 1600,90
+                   L1600,160 L0,160 Z"
+                fill="#001e4c"
+            />
 
-        <div class="chat-header">
-            <div class="chat-avatar">🤖</div>
-
-            <div class="chat-title">
-                UDMS Assistant
-                <small>● Online</small>
-            </div>
-
-            <button class="chat-close" id="closeChat" type="button" aria-label="Close chatbot">
-                &times;
-            </button>
-        </div>
-
-        <div class="chat-messages" id="chatMessages">
-            <div class="message bot">
-                Hello! 👋 I'm your UDMS Assistant.
-                How can I help you today?
-            </div>
-        </div>
-
-        <div class="suggestions">
-
-            <button type="button" data-question="How do I upload a document?">
-                Upload document
-            </button>
-
-            <button type="button" data-question="Where can I view my files?">
-                View files
-            </button>
-
-            <button type="button" data-question="Is my data secure?">
-                Data security
-            </button>
-
-            <button type="button" data-question="How do I reset my password?">
-                Reset password
-            </button>
-
-        </div>
-
-        <form class="chat-form" id="chatForm">
-
-            <input type="text" id="chatInput" placeholder="Type your question..." maxlength="500" required>
-
-            <button type="submit" aria-label="Send message">
-                ➤
-            </button>
-
-        </form>
+        </svg>
 
     </div>
 
-    <!-- Back to top -->
-    <button class="back-top" type="button" onclick="window.scrollTo({top:0,behavior:'smooth'})"
-        aria-label="Back to top">
-        ↑
-    </button>
+</div>
 
-    <script>
-        /* FAQ answers */
+<script>
 
-        const faqData = [
-            {
-                question: "Who can use the UDMS?",
-                answer: "Authorized students, faculty, and staff of St. Clare College of Caloocan can use UDMS based on their assigned account permissions."
-            },
-            {
-                question: "How do I upload a document?",
-                answer: "Log in to UDMS, open the Documents section, and select the available upload option."
-            },
-            {
-                question: "Is my data secure?",
-                answer: "UDMS uses account authentication and role-based access permissions to help protect documents."
-            },
-            {
-                question: "What should I do if I encounter an issue?",
-                answer: "Contact your UDMS administrator or designated school support personnel."
-            },
-            {
-                question: "Can I access my documents on mobile?",
-                answer: "You can access UDMS using a compatible mobile browser when the server is reachable."
-            }
-        ];
+const passwordInput =
+    document.getElementById("password");
 
-        function showFAQ(index) {
-            const item = faqData[index];
+const togglePassword =
+    document.getElementById("togglePassword");
 
-            if (!item) return;
+togglePassword.addEventListener("click", function() {
 
-            document.getElementById("faqTitle").textContent =
-                item.question;
+    if (passwordInput.type === "password") {
 
-            document.getElementById("faqAnswer").textContent =
-                item.answer;
+        passwordInput.type = "text";
 
-            document.getElementById("faqModal")
-                .classList.add("open");
-        }
+        togglePassword.textContent = "◎";
 
-        function closeFAQ() {
-            document.getElementById("faqModal")
-                .classList.remove("open");
-        }
+        togglePassword.setAttribute(
+            "aria-label",
+            "Hide password"
+        );
 
-        document.getElementById("faqModal")
-            .addEventListener("click", function (event) {
-                if (event.target === this) closeFAQ();
-            });
+    } else {
 
-        /* Chatbot */
+        passwordInput.type = "password";
 
-        const robotButton = document.getElementById("robotButton");
-        const chatbot = document.getElementById("chatbot");
-        const closeChat = document.getElementById("closeChat");
-        const chatMessages = document.getElementById("chatMessages");
-        const chatForm = document.getElementById("chatForm");
-        const chatInput = document.getElementById("chatInput");
+        togglePassword.textContent = "◉";
 
-        function setChatOpen(open) {
-            chatbot.classList.toggle("open", open);
-            robotButton.setAttribute("aria-expanded", String(open));
+        togglePassword.setAttribute(
+            "aria-label",
+            "Show password"
+        );
 
-            if (open) chatInput.focus();
-        }
+    }
 
-        robotButton.addEventListener("click", function () {
-            setChatOpen(!chatbot.classList.contains("open"));
-        });
+});
 
-        closeChat.addEventListener("click", function () {
-            setChatOpen(false);
-        });
-
-        document.addEventListener("keydown", function (event) {
-            if (event.key === "Escape") {
-                closeFAQ();
-                setChatOpen(false);
-            }
-        });
-
-        function addMessage(text, sender) {
-            const message = document.createElement("div");
-
-            message.className = "message " + sender;
-            message.textContent = text;
-
-            chatMessages.appendChild(message);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-        }
-
-        function getAnswer(question) {
-            const q = question.toLowerCase();
-
-            if (q.includes("upload") || q.includes("submit")) {
-                return "Log in to UDMS, open the Documents section, and use the available upload option.";
-            }
-
-            if (q.includes("password") || q.includes("forgot") || q.includes("reset")) {
-                return "Use the password recovery option on the Login page if available, or contact your UDMS administrator.";
-            }
-
-            if (q.includes("secure") || q.includes("privacy") || q.includes("safe")) {
-                return "UDMS uses authentication and role-based permissions to help protect documents.";
-            }
-
-            if (q.includes("login") || q.includes("sign in")) {
-                return "Click Login or Get Started to open the UDMS login page.";
-            }
-
-            if (q.includes("register") || q.includes("sign up")) {
-                return "Open the registration page and complete the required account information.";
-            }
-
-            if (q.includes("view") || q.includes("file") || q.includes("document")) {
-                return "Log in and open the Documents section to view files available to your account.";
-            }
-
-            if (q.includes("contact") || q.includes("support") || q.includes("issue")) {
-                return "Contact your UDMS administrator or designated school support personnel.";
-            }
-
-            if (q.includes("mobile") || q.includes("phone")) {
-                return "You can use a compatible mobile browser when the UDMS server is reachable.";
-            }
-
-            if (q.includes("hello") || q.includes("hi") || q.includes("hey")) {
-                return "Hello! I can help with UDMS login, registration, document uploads, and file access.";
-            }return "I can answer common UDMS questions about login, registration, uploading documents, viewing files, password recovery, and account security.";
-        }
-
-        function askBot(question) {
-            setChatOpen(true);
-            addMessage(question, "user");
-            addMessage(getAnswer(question), "bot");
-        }
-
-        document.querySelectorAll("[data-question]").forEach(button => {
-            button.addEventListener("click", function () {
-                askBot(this.dataset.question);
-            });
-        });
-
-        chatForm.addEventListener("submit", function (event) {
-            event.preventDefault();
-
-            const question = chatInput.value.trim();
-            if (!question) return;
-
-            chatInput.value = "";
-            askBot(question);
-        });
-    </script>
+</script>
 
 </body>
-
 </html>

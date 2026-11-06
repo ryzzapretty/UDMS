@@ -38,13 +38,21 @@ function visible_sql($u,$a='d'){ // SQL condition = documents this user may see
 function can_view($d){ $u=me(); if(!$u||!$d) return false; if($u['role']==='Admin') return true;
   if(!in_array($u['role'],['Faculty','Student'],true)) return false;
   if($d['uploaded_by']==$u['id']) return true;
+  if(faculty_can_review($d,$u)) return true;
   if(q("SELECT 1 FROM document_shares WHERE document_id=? AND shared_with=?",[$d['id'],$u['id']])->fetch()) return true;
   if($d['status']!=='Approved') return false;
   switch($d['access_level']){ case 'Public':return true; case 'Faculty Only':return $u['role']==='Faculty';
     case 'Department':return $u['department_id'] && $u['department_id']==$d['department_id']; } return false; }
+// Faculty staff can review pending Student documents in their own department.
+function faculty_can_review($d,$u){
+  if(($u['role']??'')!=='Faculty' || ($d['status']??'')!=='Pending Review') return false;
+  if(empty($u['department_id']) || empty($d['department_id']) || (int)$u['department_id']!==(int)$d['department_id']) return false;
+  $owner=q("SELECT role FROM users WHERE id=?",[$d['uploaded_by']])->fetch();
+  return $owner && $owner['role']==='Student';
+}
 function perms($d,$u){ $adm=$u['role']==='Admin'; $fac=$u['role']==='Faculty'; $own=$d['uploaded_by']==$u['id']; $st=$d['status']; $v=can_view($d);
   $editable=in_array($st,['Draft','Returned for Revision','Rejected'],true);
-  return ['view'=>$v,'edit'=>$v&&($adm||($own&&$editable)),'submit'=>$v&&($adm||$own)&&$editable,'review'=>$adm&&$st==='Pending Review',
+  return ['view'=>$v,'edit'=>$v&&($adm||($own&&$editable)),'submit'=>$v&&($adm||$own)&&$editable,'review'=>($adm&&$st==='Pending Review')||faculty_can_review($d,$u),
    'archive'=>$v&&$st!=='Archived'&&($adm||($own&&$fac&&$st==='Approved')),'restore'=>$adm&&$st==='Archived','delete'=>$adm&&$st==='Archived',
    'share'=>$v&&$st!=='Archived'&&($adm||$fac)&&($st==='Approved'||$adm||$own)]; }
 
@@ -83,7 +91,7 @@ function post_btn($act,$id,$label,$cls='btn-outline-primary',$msg='',$extra=''){
 function nav_for($r){
   $n=[['Dashboard','dashboard.php','speedometer2']]; $tail=[['Notifications','notifications.php','bell'],['Profile','profile.php','person-circle'],['Logout','logout.php','box-arrow-left']];
   if($r==='Admin') return array_merge($n,[['Documents','documents.php?v=all','folder2-open'],['Create Document','document_form.php?mode=create','file-earmark-plus'],['Upload Document','document_form.php?mode=upload','cloud-upload'],['Pending Reviews','documents.php?v=pending','hourglass-split'],['Archive','documents.php?v=archive','archive'],['Users','users.php','people'],['Categories','lookup.php?t=categories','tags'],['Departments','lookup.php?t=departments','building'],['Activity Logs','logs.php','clock-history'],['Reports','reports.php','bar-chart']],$tail);
-  if($r==='Faculty') return array_merge($n,[['My Documents','documents.php?v=mine','folder2-open'],['Create Document','document_form.php?mode=create','file-earmark-plus'],['Upload Document','document_form.php?mode=upload','cloud-upload'],['Pending Documents','documents.php?v=pending','hourglass-split'],['Shared Documents','documents.php?v=shared','share'],['Archive','documents.php?v=archive','archive']],$tail);
+  if($r==='Faculty') return array_merge($n,[['Student Requests','documents.php?v=student_requests','clipboard-check'],['My Documents','documents.php?v=mine','folder2-open'],['Create Document','document_form.php?mode=create','file-earmark-plus'],['Upload Document','document_form.php?mode=upload','cloud-upload'],['Pending Documents','documents.php?v=pending','hourglass-split'],['Shared Documents','documents.php?v=shared','share'],['Archive','documents.php?v=archive','archive']],$tail);
   return array_merge($n,[['My Documents','documents.php?v=mine','folder2-open'],['Upload Document','document_form.php?mode=upload','cloud-upload'],['My Submissions','documents.php?v=submissions','send-check'],['Shared Documents','documents.php?v=shared','share']],$tail); }
 function nav_active($h){ $p=parse_url($h); if($p['path']!==basename($_SERVER['SCRIPT_NAME'])) return false;
   if(isset($p['query'])){ parse_str($p['query'],$a); foreach($a as $k=>$v) if(($_GET[$k]??null)!==$v) return false; return true; }

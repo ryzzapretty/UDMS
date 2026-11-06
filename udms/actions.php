@@ -5,7 +5,7 @@ if(!$d||!can_view($d)){ flash('error','Document not found or access denied.'); r
 $p=perms($d,$u); $code=$d['document_id']; $t=$d['title']; $back="document_view.php?id=$id"; $link=$back;
 try{ switch($act){
  case 'submit': if(!$p['submit']) throw new Exception('You cannot submit this document.'); submit_doc($id,$code,$t); flash('success',"$code submitted for review."); break;
- case 'review': if(!$p['review']) throw new Exception('Only an administrator can review pending documents.');
+ case 'review': if(!$p['review']) throw new Exception('You are not authorized to review this student request.');
    $dec=$_POST['decision']??''; $cm=trim($_POST['comments']??''); $map=['approve'=>['Approved','Approved','approved'],'reject'=>['Rejected','Rejected','rejected'],'revise'=>['Returned for Revision','Revision Requested','returned for revision']];
    if(!isset($map[$dec])) throw new Exception('Unknown decision.'); if($dec!=='approve'&&$cm==='') throw new Exception('A comment is required.');
    [$ns,$al,$verb]=$map[$dec]; q("UPDATE documents SET status=?,approved_at=".($dec==='approve'?'NOW()':'approved_at')." WHERE id=?",[$ns,$id]);

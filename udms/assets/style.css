@@ -280,6 +280,249 @@ h1,h2,h3,h4,h5,.brand,.serif{font-family:'Source Serif 4',Georgia,serif;letter-s
   padding: 0 0.5rem;
 }
 
+
+/* =========================================
+   UDMS SHARED SIDEBAR
+========================================= */
+
+.udms-sidebar {
+    width: 225px;
+    min-width: 225px;
+    min-height: 100%;
+    background: linear-gradient(
+        180deg,
+        #00245d 0%,
+        #00265f 50%,
+        #001b49 100%
+    );
+    position: relative;
+    overflow: hidden;
+    flex-shrink: 0;
+    padding: 70px 10px 25px;
+}
+
+.sidebar-navigation {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    position: relative;
+    z-index: 2;
+}
+
+.udms-sidebar .sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px 16px;
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    border-radius: 15px;
+    transition: all 0.25s ease;
+}
+
+.udms-sidebar .sidebar-link i {
+    font-size: 23px;
+    width: 26px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.udms-sidebar .sidebar-link:hover {
+    background: linear-gradient(
+        90deg,
+        #0870ed,
+        #0754c5
+    );
+    color: white;
+    transform: translateX(3px);
+}
+
+.udms-sidebar .sidebar-link.active {
+    background: linear-gradient(
+        90deg,
+        #0870ed,
+        #0754c5
+    );
+    color: white;
+    font-weight: 700;
+}
+
+.udms-sidebar .sidebar-divider {
+    height: 1px;
+    background: rgba(255,255,255,0.2);
+    margin: 12px 15px;
+}
+
+.udms-sidebar .logout-link:hover {
+    background: #b42332;
+}
+
+.sidebar-decoration {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 180px;
+    background:
+        linear-gradient(
+            180deg,
+            rgba(0,27,73,1),
+            rgba(0,27,73,0.35)
+        ),
+        url("St. Clare College Campus Banner.png")
+        center / cover;
+    opacity: 0.25;
+    pointer-events: none;
+}
+
+/* RESPONSIVE SIDEBAR */
+
+@media (max-width: 1000px) {
+
+    .udms-sidebar {
+        width: 75px;
+        min-width: 75px;
+        padding: 25px 8px;
+    }
+
+    .udms-sidebar .sidebar-link {
+        justify-content: center;
+        padding: 15px 10px;
+    }
+
+    .udms-sidebar .sidebar-link span {
+        display: none;
+    }
+
+    .udms-sidebar .sidebar-link i {
+        font-size: 23px;
+    }
+}
+
+@media (max-width: 700px) {
+
+    .udms-sidebar {
+        position: fixed;
+        top: 80px;
+        left: -250px;
+        bottom: 0;
+        width: 230px;
+        min-width: 230px;
+        height: auto;
+        z-index: 1000;
+        padding-top: 25px;
+        transition: left 0.3s ease;
+        box-shadow: 5px 0 20px rgba(0,0,0,0.15);
+    }
+
+    .udms-sidebar.open {
+        left: 0;
+    }
+
+    .udms-sidebar .sidebar-link {
+        justify-content: flex-start;
+    }
+
+    .udms-sidebar .sidebar-link span {
+        display: inline;
+    }
+}
+
+/* SHARED UDMS SIDEBAR */
+
+.udms-sidebar {
+    width: 225px;
+    min-width: 225px;
+    min-height: 100%;
+    padding: 70px 10px 25px;
+    background: linear-gradient(
+        180deg,
+        #00245d,
+        #001b49
+    );
+    position: relative;
+    flex-shrink: 0;
+    overflow: hidden;
+}
+
+.sidebar-navigation {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.udms-sidebar .sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px 16px;
+    border-radius: 15px;
+    color: white;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: 0.2s;
+}
+
+.udms-sidebar .sidebar-link i {
+    width: 26px;
+    font-size: 23px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.udms-sidebar .sidebar-link:hover,
+.udms-sidebar .sidebar-link.active {
+    background: linear-gradient(
+        90deg,
+        #0870ed,
+        #0754c5
+    );
+    color: white;
+}
+
+.udms-sidebar .sidebar-link.active {
+    font-weight: 700;
+}
+
+.sidebar-divider {
+    height: 1px;
+    background: rgba(255,255,255,0.2);
+    margin: 12px 15px;
+}
+
+.sidebar-decoration {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    height: 180px;
+    background: url("St. Clare College Campus Banner.png")
+        center / cover;
+    opacity: 0.15;
+    pointer-events: none;
+}
+
+@media (max-width: 700px) {
+    .udms-sidebar {
+        position: fixed;
+        top: 80px;
+        left: -250px;
+        bottom: 0;
+        width: 230px;
+        min-width: 230px;
+        z-index: 1000;
+        padding-top: 25px;
+        transition: left 0.3s ease;
+    }
+
+    .udms-sidebar.open {
+        left: 0;
+    }
+}
+
 /* Right Card: UDMS AI Assistant */
 .assistant-card {
   display: flex;
@@ -4057,3 +4300,66 @@ body:has(.fl-page) {
   .lp-hero-title { font-size: 2rem; }
   .lp-stats-row { gap: 0.75rem; }
 }
+
+
+/* =============================================================
+   UDMS 2026 SHARED NAVY / GOLD INTERFACE
+   Scoped to pages using includes/header.php. Existing auth and
+   standalone dashboard styles remain untouched.
+   ============================================================= */
+:root{--udms-navy:#00265f;--udms-dark:#001b49;--udms-blue:#075ecb;--udms-gold:#ffd139;--udms-border:#dce7f7}
+body:has(.udms-app){background:#f8fbff;color:#08275e;font-family:Arial,Helvetica,sans-serif}
+.udms-app{min-height:100vh;display:flex;flex-direction:column}
+.udms-top-header{min-height:102px;display:flex;align-items:center;gap:25px;padding:10px 3%;color:#fff;background:linear-gradient(110deg,#001b49,#073875,#001b49);border-bottom:5px solid var(--udms-gold);position:relative;z-index:50}
+.udms-brand{display:flex;align-items:center;gap:18px;color:white;text-decoration:none;flex-shrink:0}
+.udms-brand:hover{color:#fff}
+.udms-brand img{width:86px;height:80px;object-fit:contain}
+.udms-brand-line{height:62px;width:2px;background:#fff}
+.udms-brand strong{display:block;font-size:36px;line-height:1;font-weight:800;letter-spacing:.5px}
+.udms-brand small{display:block;font-size:14px;margin-top:6px}
+.udms-top-links{display:flex;align-items:center;gap:13px;margin-left:auto}
+.udms-top-links a{color:white;text-decoration:none;border-radius:30px;padding:11px 17px;display:flex;align-items:center;gap:9px;font-size:14px;white-space:nowrap}
+.udms-top-links a:hover,.udms-top-links a.selected{background:#075cc9;color:#fff}
+.udms-account{border-left:1px solid #ffffff8a;padding-left:18px;display:flex;align-items:center;gap:10px;font-size:13px;min-width:0}
+.udms-account>.bi{font-size:28px}.udms-account span{max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.udms-account small{display:block;color:#c4d9ff;font-size:11px}
+.udms-account a{color:white;font-size:20px;margin-left:5px}.udms-account a:hover{color:var(--udms-gold)}
+.udms-mobile-toggle{display:none;background:transparent;color:white;border:0;font-size:27px}
+.udms-layout{display:flex;flex:1;min-width:0}
+.udms-sidebar{width:225px;flex:0 0 225px;background:linear-gradient(180deg,#00245d,#001b49);padding:55px 10px 24px;position:relative;overflow:hidden;min-height:calc(100vh - 175px)}
+.udms-sidebar .sidebar-navigation{display:flex;flex-direction:column;gap:8px;position:relative;z-index:2}
+.udms-sidebar .sidebar-link{display:flex;align-items:center;gap:15px;padding:14px 15px;color:#fff;border-radius:15px;text-decoration:none;font-size:13.5px;font-weight:500;transition:background .2s,transform .2s}
+.udms-sidebar .sidebar-link>i{width:25px;text-align:center;font-size:22px;flex-shrink:0}
+.udms-sidebar .sidebar-link:hover,.udms-sidebar .sidebar-link.active{color:#fff;background:linear-gradient(90deg,#0870ed,#0754c5)}
+.udms-sidebar .sidebar-link.active{font-weight:700}
+.udms-sidebar .sidebar-count{margin-left:auto;border-radius:20px;background:#ed2940;padding:2px 8px;font-size:11px}
+.udms-sidebar .sidebar-decoration{position:absolute;bottom:0;left:0;right:0;height:185px;background:linear-gradient(transparent,#001b49aa),url('St. Clare College Campus Banner.png') center/cover;opacity:.23;pointer-events:none}
+.udms-main{flex:1;min-width:0;padding:22px 23px 32px;background:#fbfdff}
+.udms-page-banner{min-height:210px;position:relative;display:flex;align-items:center;gap:25px;padding:24px 38px;margin-bottom:22px;overflow:hidden;border-radius:17px;border:1px solid #c9def6;box-shadow:0 4px 13px #00245c1b;background:linear-gradient(90deg,#e4f2ffed 0%,#e4f2ffde 40%,#e4f2ff10 78%),url('St. Clare College Campus Banner.png') center/cover}
+.udms-page-banner:after{content:'';position:absolute;left:-3%;right:-3%;bottom:-38px;height:66px;background:#00265f;border-top:9px solid var(--udms-gold);border-radius:50% 50% 0 0}
+.udms-banner-logo img{width:138px;height:138px;object-fit:contain}.udms-banner-logo,.udms-banner-copy,.udms-banner-divider{position:relative;z-index:1}
+.udms-banner-divider{width:3px;height:120px;background:#002b64;flex-shrink:0}
+.udms-banner-copy h2{font-family:Arial,Helvetica,sans-serif;font-size:clamp(24px,2.6vw,37px);font-weight:850;color:#06285f;line-height:1.1;margin:8px 0}
+.udms-banner-eyebrow{font-size:11px;font-weight:800;letter-spacing:1.1px;color:#245f9e}
+.udms-banner-copy p{font-size:18px;font-style:italic;font-weight:600;color:#092e66;margin:0}
+.udms-page-content{max-width:1600px;margin:0 auto}
+.udms-page-content .page-title{font-family:Arial,Helvetica,sans-serif;font-size:24px;font-weight:800;color:#072a61;margin-bottom:20px}
+.udms-page-content .card{border-radius:15px!important;border:1px solid var(--udms-border)!important;box-shadow:0 5px 15px #002b6c13!important;overflow:hidden}
+.udms-page-content .card-header{background:linear-gradient(105deg,#00265f,#001b49)!important;color:#fff!important;padding:14px 20px;border:0}
+.udms-page-content .card-header strong,.udms-page-content .card-header a:not(.btn){color:#fff!important}
+.udms-page-content .card-body{padding:20px}
+.udms-page-content .card-footer{border-top:1px solid #e4edf8!important}
+.udms-page-content .btn-primary{--bs-btn-bg:#0058c8;--bs-btn-border-color:#0058c8;--bs-btn-hover-bg:#003d98;--bs-btn-hover-border-color:#003d98}
+.udms-page-content .btn-outline-primary{--bs-btn-color:#0058c8;--bs-btn-border-color:#0058c8;--bs-btn-hover-bg:#0058c8;--bs-btn-hover-border-color:#0058c8}
+.udms-page-content .btn{border-radius:9px;font-weight:600}
+.udms-page-content .form-control,.udms-page-content .form-select{border:1px solid #cbdcf0;border-radius:9px;min-height:42px}
+.udms-page-content .form-control:focus,.udms-page-content .form-select:focus{border-color:#0870ed;box-shadow:0 0 0 3px #0870ed20}
+.udms-page-content .table thead th{background:#eaf3ff;color:#0a316d;font-weight:800;border-bottom:1px solid #d3e2f5;padding:13px 14px;font-size:12px}
+.udms-page-content .table tbody td{padding:13px 14px;border-color:#e6edf7;color:#1b365f;font-size:13px}
+.udms-page-content .table-hover tbody tr:hover td{background:#f3f8ff}
+.udms-page-content .badge{border-radius:20px;padding:6px 10px}
+.udms-page-content a:not(.btn):not(.nav-link){text-underline-offset:3px}
+.udms-site-footer{background:linear-gradient(110deg,#001b49,#073677,#001b49);border-top:7px solid var(--udms-gold);color:#fff;display:flex;align-items:center;justify-content:space-between;gap:18px;padding:20px 3%;font-size:12px}
+.udms-site-footer em{font-family:Georgia,serif;font-size:21px;white-space:nowrap}
+@media(max-width:1120px){.udms-top-links{gap:2px}.udms-top-links a{padding:9px}.udms-brand strong{font-size:28px}.udms-brand small{font-size:11px}.udms-account span{max-width:115px}}
+@media(max-width:991px){.udms-sidebar{position:fixed;top:85px;bottom:0;left:-250px;z-index:45;width:225px;min-height:0;overflow:auto;transition:left .25s;box-shadow:6px 0 22px #001b4933}.udms-sidebar.open{left:0}.udms-mobile-toggle{display:block}.udms-top-header{min-height:85px}.udms-top-links{display:none}.udms-main{padding:18px}.udms-page-banner{min-height:180px}.udms-banner-logo img{width:100px;height:100px}.udms-banner-divider{height:95px}}
+@media(max-width:600px){.udms-top-header{gap:10px;padding:8px 12px}.udms-brand{gap:9px}.udms-brand img{width:53px;height:53px}.udms-brand-line{height:42px}.udms-brand strong{font-size:22px}.udms-brand small{font-size:9px}.udms-account{padding-left:8px}.udms-account span{display:none}.udms-main{padding:12px}.udms-page-banner{padding:20px 16px;gap:12px;min-height:155px}.udms-banner-logo img{width:66px;height:66px}.udms-banner-divider{height:70px}.udms-banner-copy h2{font-size:20px}.udms-banner-eyebrow{font-size:8px}.udms-banner-copy p{font-size:12px}.udms-site-footer{flex-direction:column;text-align:center}.udms-page-content .card-body{padding:14px}}
