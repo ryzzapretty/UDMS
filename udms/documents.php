@@ -32,8 +32,64 @@ if($f['by']!==''){ $w[]="u.full_name LIKE :by"; $p[':by']='%'.$f['by'].'%'; }
 $rows=q("SELECT d.*,c.category_name,dp.department_name,u.full_name AS uploader FROM documents d LEFT JOIN categories c ON c.id=d.category_id LEFT JOIN departments dp ON dp.id=d.department_id JOIN users u ON u.id=d.uploaded_by WHERE ".implode(' AND ',$w)." ORDER BY d.updated_at DESC LIMIT 200",$p)->fetchAll();
 $cats=q("SELECT * FROM categories ORDER BY category_name")->fetchAll(); $deps=q("SELECT * FROM departments ORDER BY department_name")->fetchAll();
 include 'includes/header.php'; ?>
-<div class="d-flex flex-wrap justify-content-between align-items-center mb-3"><h1 class="page-title mb-0"><?=e($t)?></h1>
- <div class="d-flex gap-2"><?php if($r!=='Student'): ?><a href="document_form.php?mode=create" class="btn btn-outline-primary"><i class="bi bi-file-earmark-plus"></i> Create Document</a><?php endif; ?><a href="document_form.php?mode=upload" class="btn btn-primary"><i class="bi bi-cloud-upload"></i> Upload Document</a></div></div>
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+  <h1 class="page-title mb-0"><?=e($t)?></h1>
+  <div class="d-flex gap-2">
+    <?php if($r==='Faculty'): ?><a href="document_form.php?mode=create" class="btn btn-outline-primary"><i class="bi bi-file-earmark-plus"></i> Create Document</a><?php endif; ?>
+    <?php if($r!=='Admin'): ?><a href="document_form.php?mode=upload" class="btn btn-primary"><i class="bi bi-cloud-upload"></i> Upload Document</a><?php endif; ?>
+  </div>
+</div>
+<?php if ($v === 'all' || $v === 'search'): ?>
+<div class="card border-0 shadow-sm mb-3">
+  <div class="card-body py-3 px-3">
+    <!-- Department Quick Filter Selection -->
+    <div class="mb-2 d-flex flex-wrap align-items-center gap-2">
+      <span class="small fw-bold text-muted text-uppercase" style="font-size:11px;min-width:95px;"><i class="bi bi-buildings"></i> Department:</span>
+      <a href="documents.php?v=<?=e($v)?><?= $f['category'] ? '&category='.$f['category'] : '' ?>" class="btn btn-sm <?= empty($f['dept']) ? 'btn-primary' : 'btn-outline-secondary' ?> py-1 px-2" style="font-size:12px;border-radius:15px;">All Departments</a>
+      <?php foreach($deps as $d): ?>
+        <a href="documents.php?v=<?=e($v)?>&dept=<?=$d['id']?><?= $f['category'] ? '&category='.$f['category'] : '' ?>" class="btn btn-sm <?= (int)$f['dept']===(int)$d['id'] ? 'btn-primary' : 'btn-outline-secondary' ?> py-1 px-2" style="font-size:12px;border-radius:15px;"><?=e($d['department_name'])?></a>
+      <?php endforeach; ?>
+      <?php if ($adm): ?>
+        <a href="lookup.php?t=departments" class="btn btn-sm btn-link text-decoration-none text-muted py-0 px-1 ms-auto small" title="Configure Departments in settings"><i class="bi bi-gear"></i> Manage</a>
+      <?php endif; ?>
+    </div>
+    <!-- Category Quick Filter Selection -->
+    <div class="d-flex flex-wrap align-items-center gap-2 pt-2 border-top">
+      <span class="small fw-bold text-muted text-uppercase" style="font-size:11px;min-width:95px;"><i class="bi bi-tags"></i> Category:</span>
+      <a href="documents.php?v=<?=e($v)?><?= $f['dept'] ? '&dept='.$f['dept'] : '' ?>" class="btn btn-sm <?= empty($f['category']) ? 'btn-primary' : 'btn-outline-secondary' ?> py-1 px-2" style="font-size:12px;border-radius:15px;">All Categories</a>
+      <?php foreach($cats as $c): ?>
+        <a href="documents.php?v=<?=e($v)?>&category=<?=$c['id']?><?= $f['dept'] ? '&dept='.$f['dept'] : '' ?>" class="btn btn-sm <?= (int)$f['category']===(int)$c['id'] ? 'btn-primary' : 'btn-outline-secondary' ?> py-1 px-2" style="font-size:12px;border-radius:15px;"><?=e($c['category_name'])?></a>
+      <?php endforeach; ?>
+      <?php if ($adm): ?>
+        <a href="lookup.php?t=categories" class="btn btn-sm btn-link text-decoration-none text-muted py-0 px-1 ms-auto small" title="Configure Categories in settings"><i class="bi bi-gear"></i> Manage</a>
+      <?php endif; ?>
+    </div>
+  </div>
+</div>
+<?php endif; ?>
+<?php if($r==='Student'): $stg=student_storage_info($u['id']); ?>
+<div class="card border-0 shadow-sm mb-3">
+  <div class="card-body py-2 px-3 d-flex flex-wrap align-items-center justify-content-between gap-2">
+    <div class="d-flex align-items-center gap-3 flex-wrap">
+      <div>
+        <span class="badge bg-<?= $stg['tier'] === 'Pro' ? 'primary' : 'secondary' ?>"><?= e($stg['tier']) ?> Plan</span>
+        <strong class="ms-1 small">Storage Quota:</strong>
+        <span class="small text-muted"><?= $stg['count'] ?> / <?= $stg['limit'] ?> Files (<?= $stg['remaining'] ?> remaining)</span>
+      </div>
+      <div class="progress" style="width: 160px; height: 8px;">
+        <div class="progress-bar <?= $stg['percent'] >= 90 ? 'bg-danger' : ($stg['percent'] >= 75 ? 'bg-warning' : 'bg-primary') ?>" style="width: <?= $stg['percent'] ?>%"></div>
+      </div>
+    </div>
+    <div>
+      <?php if($stg['tier'] !== 'Pro'): ?>
+        <a href="subscription.php" class="btn btn-sm btn-outline-primary py-0 small"><i class="bi bi-gem"></i> Upgrade to Pro (100 Files)</a>
+      <?php else: ?>
+        <a href="subscription.php" class="badge bg-light text-primary border text-decoration-none py-1 px-2"><i class="bi bi-star-fill text-warning"></i> Student Pro Active</a>
+      <?php endif; ?>
+    </div>
+  </div>
+</div>
+<?php endif; ?>
 <form class="card border-0 shadow-sm mb-3" method="get"><div class="card-body row g-2">
  <input type="hidden" name="v" value="<?=e($v==='search'?'':$v)?>">
  <div class="col-md-4"><input name="q" class="form-control" placeholder="Title, document ID, keyword, tag" value="<?=e($f['q'])?>"></div>

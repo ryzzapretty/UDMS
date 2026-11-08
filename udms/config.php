@@ -9,7 +9,23 @@ const STATUSES=['Draft','Pending Review','Approved','Rejected','Returned for Rev
 if(session_status()===PHP_SESSION_NONE){ session_set_cookie_params(['httponly'=>true,'samesite'=>'Lax']); session_start(); }
 header('X-Frame-Options: SAMEORIGIN'); header('X-Content-Type-Options: nosniff');
 
-function db(){ static $p; if(!$p){ $p=new PDO('mysql:host='.DB_HOST.';dbname='.DB_NAME.';charset=utf8mb4',DB_USER,DB_PASS,[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION,PDO::ATTR_DEFAULT_FETCH_MODE=>PDO::FETCH_ASSOC,PDO::ATTR_EMULATE_PREPARES=>false]); } return $p; }
+function check_db_schema(){
+  static $done=false; if($done) return; $done=true;
+  try {
+    $cols = db()->query("SHOW COLUMNS FROM users LIKE 'storage_limit'")->fetchAll();
+    if(empty($cols)){
+      db()->exec("ALTER TABLE users ADD COLUMN storage_limit INT NOT NULL DEFAULT 20");
+      db()->exec("ALTER TABLE users ADD COLUMN subscription_tier ENUM('Free','Pro') NOT NULL DEFAULT 'Free'");
+      db()->exec("ALTER TABLE users ADD COLUMN subscription_expires_at DATETIME NULL");
+    }
+    $archCol = db()->query("SHOW COLUMNS FROM users LIKE 'archived_at'")->fetchAll();
+    if(empty($archCol)){
+      db()->exec("ALTER TABLE users MODIFY COLUMN status ENUM('Active','Inactive','Pending','Archived') NOT NULL DEFAULT 'Pending'");
+      db()->exec("ALTER TABLE users ADD COLUMN archived_at DATETIME NULL");
+    }
+  } catch(Exception $e){}
+}
+function db(){ static $p; if(!$p){ $p=new PDO('mysql:host='.DB_HOST.';dbname='.DB_NAME.';charset=utf8mb4',DB_USER,DB_PASS,[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION,PDO::ATTR_DEFAULT_FETCH_MODE=>PDO::FETCH_ASSOC,PDO::ATTR_EMULATE_PREPARES=>false]); check_db_schema(); } return $p; }
 function q($sql,$p=[]){ $s=db()->prepare($sql); $s->execute($p); return $s; }
 function e($s){ return htmlspecialchars((string)$s,ENT_QUOTES,'UTF-8'); }
 function redirect($u){ header("Location: $u"); exit; }
@@ -84,15 +100,50 @@ function save_upload($f){
   if(!move_uploaded_file($f['tmp_name'],UPLOAD_DIR.$name)) throw new Exception('The file could not be saved on the server.');
   return ['path'=>$name,'name'=>safe_name($f['name']),'ext'=>$ext,'size'=>(int)$f['size']]; }
 
+function student_storage_info($uid = null){
+  $u = $uid ? q("SELECT * FROM users WHERE id=?", [$uid])->fetch() : me();
+  if(!$u || $u['role'] !== 'Student'){
+    return ['is_student'=>false,'unlimited'=>true,'count'=>0,'limit'=>0,'remaining'=>9999,'percent'=>0,'tier'=>'Unlimited','can_upload'=>true,'expires_at'=>null,'size_bytes'=>0,'size_formatted'=>'0 KB'];
+  }
+  $tier = $u['subscription_tier'] ?? 'Free';
+  $expires_at = $u['subscription_expires_at'] ?? null;
+  if($tier === 'Pro' && $expires_at && strtotime($expires_at) < time()){
+    q("UPDATE users SET subscription_tier='Free', storage_limit=20, subscription_expires_at=NULL WHERE id=?", [$u['id']]);
+    $tier = 'Free';
+    $u['storage_limit'] = 20;
+    $expires_at = null;
+    notify($u['id'], 'Your Student Pro subscription has expired and your account has returned to the Free plan (20 files limit).', 'subscription.php');
+  }
+  $limit = (int)($u['storage_limit'] ?? 20);
+  if($limit <= 0) $limit = 20;
+  $row = q("SELECT COUNT(*) AS c, COALESCE(SUM(file_size), 0) AS total_bytes FROM documents WHERE uploaded_by=? AND status<>'Archived'", [$u['id']])->fetch();
+  $count = (int)$row['c'];
+  $bytes = (int)$row['total_bytes'];
+  $percent = min(100, round(($count / $limit) * 100));
+  return [
+    'is_student' => true,
+    'unlimited' => false,
+    'count' => $count,
+    'limit' => $limit,
+    'remaining' => max(0, $limit - $count),
+    'percent' => $percent,
+    'tier' => $tier,
+    'can_upload' => $count < $limit,
+    'expires_at' => $expires_at,
+    'size_bytes' => $bytes,
+    'size_formatted' => $bytes > 1048576 ? number_format($bytes / 1048576, 1) . ' MB' : number_format($bytes / 1024, 1) . ' KB'
+  ];
+}
+
 // ---------- UI helpers ----------
 function badge($s){ $c=['Draft'=>'secondary','Pending Review'=>'warning text-dark','Approved'=>'success','Rejected'=>'danger','Returned for Revision'=>'info text-dark','Archived'=>'dark'][$s]??'secondary'; return "<span class='badge bg-$c'>".e($s)."</span>"; }
 function post_btn($act,$id,$label,$cls='btn-outline-primary',$msg='',$extra=''){
   return '<form method="post" action="actions.php" class="d-inline js-confirm" data-msg="'.e($msg).'">'.csrf_field().'<input type="hidden" name="act" value="'.e($act).'"><input type="hidden" name="id" value="'.(int)$id.'">'.$extra.'<button class="btn btn-sm '.$cls.'">'.$label.'</button></form>'; }
 function nav_for($r){
   $n=[['Dashboard','dashboard.php','speedometer2']]; $tail=[['Notifications','notifications.php','bell'],['Profile','profile.php','person-circle'],['Logout','logout.php','box-arrow-left']];
-  if($r==='Admin') return array_merge($n,[['Documents','documents.php?v=all','folder2-open'],['Create Document','document_form.php?mode=create','file-earmark-plus'],['Upload Document','document_form.php?mode=upload','cloud-upload'],['Pending Reviews','documents.php?v=pending','hourglass-split'],['Archive','documents.php?v=archive','archive'],['Users','users.php','people'],['Categories','lookup.php?t=categories','tags'],['Departments','lookup.php?t=departments','building'],['Activity Logs','logs.php','clock-history'],['Reports','reports.php','bar-chart']],$tail);
+  if($r==='Admin') return array_merge($n,[['Documents','documents.php?v=all','folder2-open'],['Archive','documents.php?v=archive','archive'],['Users','users.php','people'],['Activity Logs','logs.php','clock-history'],['Reports','reports.php','bar-chart']],$tail);
   if($r==='Faculty') return array_merge($n,[['Student Requests','documents.php?v=student_requests','clipboard-check'],['My Documents','documents.php?v=mine','folder2-open'],['Create Document','document_form.php?mode=create','file-earmark-plus'],['Upload Document','document_form.php?mode=upload','cloud-upload'],['Pending Documents','documents.php?v=pending','hourglass-split'],['Shared Documents','documents.php?v=shared','share'],['Archive','documents.php?v=archive','archive']],$tail);
-  return array_merge($n,[['My Documents','documents.php?v=mine','folder2-open'],['Upload Document','document_form.php?mode=upload','cloud-upload'],['My Submissions','documents.php?v=submissions','send-check'],['Shared Documents','documents.php?v=shared','share']],$tail); }
+  return array_merge($n,[['My Documents','documents.php?v=mine','folder2-open'],['Upload Document','document_form.php?mode=upload','cloud-upload'],['My Submissions','documents.php?v=submissions','send-check'],['Shared Documents','documents.php?v=shared','share'],['My Subscription','subscription.php','gem']],$tail); }
 function nav_active($h){ $p=parse_url($h); if($p['path']!==basename($_SERVER['SCRIPT_NAME'])) return false;
   if(isset($p['query'])){ parse_str($p['query'],$a); foreach($a as $k=>$v) if(($_GET[$k]??null)!==$v) return false; return true; }
   return empty($_GET['v'])&&empty($_GET['t'])&&empty($_GET['mode']); }

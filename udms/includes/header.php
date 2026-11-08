@@ -11,8 +11,12 @@ $u=me(); $public=$public??false; $title=$title??APP;
 <div class="udms-app">
 <header class="udms-top-header">
   <a class="udms-brand" href="dashboard.php"><img src="assets/udms-logo.png" alt="UDMS logo"><span class="udms-brand-line"></span><span><strong>UDMS</strong><small>St. Clare College of Caloocan</small></span></a>
-  <nav class="udms-top-links" aria-label="Quick links"><a class="selected" href="dashboard.php"><i class="bi bi-house-door-fill"></i> Home</a><a href="landingpage.php#about"><i class="bi bi-info-circle-fill"></i> About</a><a href="landingpage.php#contact"><i class="bi bi-envelope-fill"></i> Contact</a></nav>
-  <div class="udms-account"><i class="bi bi-person-circle"></i><span><?=e($u['full_name'])?><small><?=e($u['role'])?></small></span><a href="logout.php" title="Log out" aria-label="Log out"><i class="bi bi-box-arrow-right"></i></a></div>
+  <div class="udms-account">
+    <a href="notifications.php" class="text-white text-decoration-none position-relative" title="Notifications" aria-label="Notifications">
+      <i class="bi bi-bell-fill fs-5"></i>
+      <?php if($unread): ?><span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size:9px;padding:3px 5px;"><?=$unread?></span><?php endif; ?>
+    </a>
+  </div>
   <button type="button" id="sbtn" class="udms-mobile-toggle" aria-label="Toggle navigation" aria-expanded="false"><i class="bi bi-list"></i></button>
 </header>
 <div class="udms-layout">

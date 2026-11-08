@@ -9,7 +9,11 @@ CREATE TABLE IF NOT EXISTS users(
  email VARCHAR(150) NOT NULL UNIQUE, password VARCHAR(255) NOT NULL,
  role ENUM('Admin','Faculty','Student','Guest') NOT NULL DEFAULT 'Student',
  department_id INT NULL, id_number VARCHAR(50) NULL,
- status ENUM('Active','Inactive','Pending') NOT NULL DEFAULT 'Pending',
+ status ENUM('Active','Inactive','Pending','Archived') NOT NULL DEFAULT 'Pending',
+ storage_limit INT NOT NULL DEFAULT 20,
+ subscription_tier ENUM('Free','Pro') NOT NULL DEFAULT 'Free',
+ subscription_expires_at DATETIME NULL,
+ archived_at DATETIME NULL,
  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
  FOREIGN KEY(department_id) REFERENCES departments(id) ON DELETE SET NULL) ENGINE=InnoDB;
 CREATE TABLE IF NOT EXISTS documents(

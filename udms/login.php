@@ -27,7 +27,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             } elseif ($user['status'] !== 'Active') {
                 $error = $user['status'] === 'Pending'
                     ? "Your account is pending administrator approval."
-                    : "Your account is inactive. Please contact an administrator.";
+                    : ($user['status'] === 'Archived'
+                        ? "This account has been archived. Please contact an administrator."
+                        : "Your account is inactive. Please contact an administrator.");
             } elseif (!in_array($user['role'], ['Admin', 'Faculty', 'Student'], true)) {
                 $error = "This account does not have access to UDMS.";
             } else {
@@ -762,7 +764,7 @@ body {
 
     <header class="header">
 
-        <a href="landingpage.php" class="brand">
+        <a href="index.php" class="brand">
 
             <img
                 class="brand-logo"
@@ -782,17 +784,17 @@ body {
 
         <nav class="nav-links">
 
-            <a href="landingpage.php">
+            <a href="index.php">
                 <span class="nav-icon">⌂</span>
                 Home
             </a>
 
-            <a href="landingpage.php#about">
+            <a href="index.php#about">
                 <span class="nav-icon">●</span>
                 About
             </a>
 
-            <a href="landingpage.php#contact">
+            <a href="index.php#contact">
                 <span class="nav-icon">✉</span>
                 Contact
             </a>

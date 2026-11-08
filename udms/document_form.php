@@ -18,6 +18,12 @@ if($_SERVER['REQUEST_METHOD']==='POST'){ csrf_check();
   $f=array_merge($f,['title'=>$t,'description'=>$ds,'document_type'=>$ty,'category_id'=>$cat,'department_id'=>$dep,'access_level'=>$lv,'tags'=>$tags,'date_received'=>$dr]);
   if(!$err){ $file=null;
     try{
+      if($mode!=='edit' && $stu){
+        $stg=student_storage_info($u['id']);
+        if(!$stg['can_upload']){
+          throw new Exception("Storage limit reached! Your {$stg['tier']} Plan allows a maximum of {$stg['limit']} stored documents ({$stg['count']}/{$stg['limit']} used). Please upgrade to Student Pro or delete older documents to continue.");
+        }
+      }
       if($mode==='create'){ if($content==='') throw new Exception('Write the document content.'); $sn=bin2hex(random_bytes(16)).'.txt'; file_put_contents(UPLOAD_DIR.$sn,$content); $file=['path'=>$sn,'name'=>safe_name($t).'.txt','ext'=>'txt','size'=>strlen($content)]; }
       elseif(!empty($_FILES['file']['name'])) $file=save_upload($_FILES['file']);
       elseif($mode==='upload') throw new Exception('Choose a file to upload.');
@@ -40,8 +46,32 @@ if($_SERVER['REQUEST_METHOD']==='POST'){ csrf_check();
       if($submit&&in_array($cur,['Draft','Returned for Revision','Rejected'],true)) submit_doc($docId,$code,$t);
       db()->commit(); flash('success',$submit?"$code saved and submitted for review.":"$code saved."); redirect("document_view.php?id=$docId");
     }catch(Exception $x){ if(db()->inTransaction()) db()->rollBack(); if($file&&is_file(UPLOAD_DIR.$file['path'])) unlink(UPLOAD_DIR.$file['path']); $err[]=$x->getMessage(); } } }
-$title=['create'=>'Create Document','upload'=>'Upload Document','edit'=>'Edit Document'][$mode]; include 'includes/header.php'; ?>
+$title=['create'=>'Create Document','upload'=>'Upload Document','edit'=>'Edit Document'][$mode];
+$stg=student_storage_info($u['id']);
+$storageBlocked=($mode!=='edit'&&$stu&&!$stg['can_upload']);
+include 'includes/header.php'; ?>
 <h1 class="page-title"><?=e($title)?><?php if($doc) echo ' <small class="text-muted fs-6">'.e($doc['document_id']).' &middot; v'.e($doc['current_version']).'</small>'; ?></h1>
+<?php if($stu): ?>
+  <?php if($storageBlocked): ?>
+    <div class="alert alert-danger d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+      <div>
+        <i class="bi bi-exclamation-triangle-fill fs-5 me-2"></i>
+        <strong>Storage Limit Reached (<?= $stg['count'] ?>/<?= $stg['limit'] ?>)!</strong> Your <strong><?= e($stg['tier']) ?> Plan</strong> storage quota is full.
+        You cannot upload new documents until you upgrade your subscription or delete unneeded files.
+      </div>
+      <a href="subscription.php" class="btn btn-sm btn-primary fw-bold text-nowrap"><i class="bi bi-gem"></i> Upgrade to Student Pro (100 Files)</a>
+    </div>
+  <?php else: ?>
+    <div class="alert alert-light border d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3 py-2">
+      <div class="small">
+        <i class="bi bi-hdd-network text-primary me-1"></i> Storage Quota: <strong><?= $stg['count'] ?> / <?= $stg['limit'] ?></strong> documents stored (<strong><?= $stg['remaining'] ?></strong> remaining on <?= e($stg['tier']) ?> Plan).
+      </div>
+      <?php if($stg['tier'] !== 'Pro'): ?>
+        <a href="subscription.php" class="btn btn-sm btn-outline-primary py-0 small"><i class="bi bi-gem"></i> Upgrade Storage</a>
+      <?php endif; ?>
+    </div>
+  <?php endif; ?>
+<?php endif; ?>
 <?php if($err): ?><div class="alert alert-danger"><ul class="mb-0"><?php foreach($err as $x) echo '<li>'.e($x).'</li>'; ?></ul></div><?php endif; ?>
 <form method="post" enctype="multipart/form-data" class="card border-0 shadow-sm"><div class="card-body row g-3"><?=csrf_field()?>
  <div class="col-md-8"><label class="form-label">Document Title *</label><input name="title" maxlength="200" class="form-control" required value="<?=e($f['title'])?>"></div>
@@ -56,7 +86,7 @@ $title=['create'=>'Create Document','upload'=>'Upload Document','edit'=>'Edit Do
  <?php if($mode==='create'): ?><div class="col-12"><label class="form-label">Document Content *</label><textarea name="content" rows="10" class="form-control" required><?=e($_POST['content']??'')?></textarea></div>
  <?php else: ?><div class="col-md-8"><label class="form-label"><?=$mode==='edit'?'Upload New Version (optional)':'File *'?></label><input type="file" name="file" class="form-control" <?=$mode==='upload'?'required':''?> accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png"><div class="form-text">PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, JPG, PNG. Maximum 10 MB.</div></div>
   <?php if($mode==='edit'): ?><div class="col-md-4"><label class="form-label">Version Type</label><select name="vtype" class="form-select"><option value="minor">Minor change (<?=e(next_version($doc['current_version'],false))?>)</option><option value="major">Major change (<?=e(next_version($doc['current_version'],true))?>)</option></select></div><?php endif; endif; ?>
-</div><div class="card-footer bg-white d-flex gap-2 flex-wrap"><button class="btn btn-outline-primary" name="save" value="1"><i class="bi bi-save"></i> Save as Draft</button>
- <?php if(!$doc||in_array($doc['status'],['Draft','Returned for Revision','Rejected'])): ?><button class="btn btn-primary" name="submit_now" value="1"><i class="bi bi-send"></i> Save &amp; Submit for Review</button><?php endif; ?>
+</div><div class="card-footer bg-white d-flex gap-2 flex-wrap"><button class="btn btn-outline-primary" name="save" value="1" <?=$storageBlocked?'disabled':''?>><i class="bi bi-save"></i> Save as Draft</button>
+ <?php if(!$doc||in_array($doc['status'],['Draft','Returned for Revision','Rejected'])): ?><button class="btn btn-primary" name="submit_now" value="1" <?=$storageBlocked?'disabled':''?>><i class="bi bi-send"></i> Save &amp; Submit for Review</button><?php endif; ?>
  <a href="dashboard.php" class="btn btn-light">Cancel</a></div></form>
 <?php include 'includes/footer.php'; ?>
