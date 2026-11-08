@@ -1,6 +1,6 @@
 <?php require 'config.php'; require_role('Admin'); $u=me();
 $t=$_GET['t']??'categories'; if(!in_array($t,['categories','departments'],true)) $t='categories';
-$cfg=['categories'=>['Categories','category_name','category_id'],'departments'=>['Departments','department_name','department_id']]; [$label,$col,$fk]=$cfg[$t]; $title=$label;
+$cfg=['categories'=>['Categories','category_name','category_id'],'departments'=>['Grade Levels','department_name','department_id']]; [$label,$col,$fk]=$cfg[$t]; $title=$label;
 if($_SERVER['REQUEST_METHOD']==='POST'){ csrf_check(); $act=$_POST['act']??''; $id=(int)($_POST['id']??0);
   try{
     if($act==='save'){ $n=trim($_POST['name']??''); $ds=trim($_POST['description']??''); if($n===''||mb_strlen($n)>120) throw new Exception('Enter a name (max 120 characters).');

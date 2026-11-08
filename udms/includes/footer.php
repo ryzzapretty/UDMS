@@ -6,5 +6,7 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="assets/app.js"></script>
 <?php if(!empty($_SESSION['flash'])): $f=$_SESSION['flash']; unset($_SESSION['flash']); ?>
-<script>flashMsg(<?=json_encode($f['t'])?>,<?=json_encode($f['m'])?>);</script><?php endif; ?>
+<?php if(!(me() && stripos($f['m'] ?? '', 'logged out') !== false)): ?>
+<script>flashMsg(<?=json_encode($f['t'])?>,<?=json_encode($f['m'])?>);</script>
+<?php endif; endif; ?>
 </body></html>

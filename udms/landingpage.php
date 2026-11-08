@@ -1,6 +1,6 @@
 
 <?php
-// landingpage.php
+// index.php
 // University Document Management System
 // St. Clare College of Caloocan
 
@@ -720,12 +720,151 @@ section {
     background: white;
     color: var(--navy);
     border-radius: 50%;
-    width: 35px;
-    height: 35px;
+    width: 38px;
+    height: 38px;
     display: grid;
     place-items: center;
-    font-size: 17px;
+    font-size: 18px;
     font-weight: bold;
+    text-decoration: none;
+    transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    cursor: pointer;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
+    position: relative;
+}
+
+.footer-social a:hover {
+    background: var(--gold);
+    color: var(--navy);
+    transform: translateY(-4px) scale(1.15);
+    box-shadow: 0 6px 16px rgba(255, 209, 57, 0.55);
+}
+
+.footer-social a:active {
+    transform: scale(0.92);
+}
+
+.footer-social a.footer-email-btn {
+    animation: emailIconPulse 3s infinite;
+}
+
+@keyframes emailIconPulse {
+    0%, 100% {
+        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
+    }
+    50% {
+        box-shadow: 0 0 16px rgba(255, 209, 57, 0.85), 0 3px 8px rgba(0, 0, 0, 0.25);
+    }
+}
+
+/* ===========================
+   INTERACTIVE EMAIL TOAST
+=========================== */
+.email-toast-backdrop {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(140px);
+    background: linear-gradient(135deg, #001b49, #00316d);
+    color: #ffffff;
+    border: 2px solid var(--gold);
+    border-radius: 16px;
+    padding: 16px 22px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+    z-index: 999999;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    max-width: min(92vw, 560px);
+}
+
+.email-toast-backdrop.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.email-toast-icon {
+    font-size: 32px;
+    line-height: 1;
+    color: var(--gold);
+    flex-shrink: 0;
+}
+
+.email-toast-text {
+    flex: 1;
+    min-width: 0;
+    line-height: 1.35;
+}
+
+.email-toast-title {
+    font-weight: 800;
+    font-size: 15px;
+    color: #ffffff;
+}
+
+.email-toast-sub {
+    font-size: 13px;
+    color: var(--gold);
+    margin-top: 2px;
+    word-break: break-all;
+}
+
+.email-toast-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 6px;
+}
+
+.email-toast-btn {
+    background: var(--gold);
+    color: #001b49 !important;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 800;
+    text-decoration: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: 0.2s ease;
+}
+
+.email-toast-btn:hover {
+    background: #ffffff;
+    transform: translateY(-1px);
+}
+
+.email-toast-btn.secondary {
+    background: rgba(255, 255, 255, 0.18);
+    color: #ffffff !important;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.email-toast-btn.secondary:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.email-toast-close {
+    background: transparent;
+    border: none;
+    color: #ffffff;
+    font-size: 22px;
+    cursor: pointer;
+    opacity: 0.7;
+    margin-left: 4px;
+    line-height: 1;
+}
+
+.email-toast-close:hover {
+    opacity: 1;
+    color: var(--gold);
 }
 
 .footer-motto {
@@ -1154,7 +1293,9 @@ section {
 
             <a href="#faqs">? &nbsp;FAQs</a>
 
-            <a href="#contact">✉ &nbsp;Contact</a>
+            <a href="mailto:udms.scc@gmail.com" class="js-contact-email" title="Contact CX: udms.scc@gmail.com">✉ &nbsp;Contact CX</a>
+
+            <a href="register.php" style="color:var(--gold); font-weight:700;">👤 &nbsp;Register</a>
 
             <a href="login.php" class="login-btn">
                 ⇥ &nbsp;Login
@@ -1584,13 +1725,13 @@ section {
                 <a href="#faqs">FAQs</a>
                 <span>|</span>
 
-                <a href="#contact">Contact</a>
+                <a href="mailto:udms.scc@gmail.com" class="js-contact-email" title="Contact CX: udms.scc@gmail.com">Contact CX</a>
 
             </div>
 
             <div class="footer-social">
 
-                <a href="#contact" aria-label="Contact">
+                <a href="mailto:udms.scc@gmail.com" class="footer-email-btn js-contact-email" id="footerEmailBtn" title="Contact CX: udms.scc@gmail.com (Click to reroute to email)" aria-label="Contact CX (udms.scc@gmail.com)">
                     ✉
                 </a>
 
@@ -2070,6 +2211,80 @@ document.getElementById("backTop")
         });
 
     });
+
+/* ===========================
+   INTERACTIVE EMAIL REROUTE
+=========================== */
+function triggerEmailReroute(e) {
+    if (e) e.preventDefault();
+
+    const targetEmail = "udms.scc@gmail.com";
+    const subject = encodeURIComponent("UDMS Inquiry - St. Clare College of Caloocan");
+    const body = encodeURIComponent("Dear UDMS Support Team,\n\nI am contacting you regarding:\n\nName:\nGrade Level / Department:\nInquiry Details:\n\nThank you!");
+    
+    // Direct web compose URL for Gmail (works universally without desktop mail client)
+    const gmailUrl = "https://mail.google.com/mail/?view=cm&fs=1&to=" + targetEmail + "&su=" + subject + "&body=" + body;
+    // Standard mailto URL for desktop mail clients (Outlook, Apple Mail, Thunderbird)
+    const mailtoUrl = "mailto:" + targetEmail + "?subject=" + subject + "&body=" + body;
+
+    // 1. Copy email address to clipboard immediately
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(targetEmail).catch(function() {});
+    }
+
+    // 2. Show interactive Toast on screen
+    showEmailToast(targetEmail, gmailUrl, mailtoUrl);
+
+    // 3. Reroute directly to Gmail composer in new tab
+    const newWin = window.open(gmailUrl, "_blank");
+
+    // 4. Fallback: if browser popup blocker intervened, trigger mailto protocol
+    if (!newWin || newWin.closed || typeof newWin.closed === "undefined") {
+        setTimeout(function() {
+            window.location.href = mailtoUrl;
+        }, 300);
+    }
+}
+
+function showEmailToast(email, gmailUrl, mailtoUrl) {
+    let toast = document.getElementById("emailToastBackdrop");
+    if (!toast) {
+        toast = document.createElement("div");
+        toast.id = "emailToastBackdrop";
+        toast.className = "email-toast-backdrop";
+        toast.innerHTML = `
+            <div class="email-toast-icon">✉</div>
+            <div class="email-toast-text">
+                <div class="email-toast-title">Rerouting to Email Composer...</div>
+                <div class="email-toast-sub"><strong>${email}</strong> &bull; Copied to clipboard!</div>
+                <div class="email-toast-actions">
+                    <a href="${gmailUrl}" target="_blank" class="email-toast-btn">Open in Gmail Web</a>
+                    <a href="${mailtoUrl}" class="email-toast-btn secondary">Open in Mail App</a>
+                </div>
+            </div>
+            <button type="button" class="email-toast-close" onclick="closeEmailToast()" aria-label="Close notification">&times;</button>
+        `;
+        document.body.appendChild(toast);
+    }
+
+    setTimeout(function() {
+        toast.classList.add("show");
+    }, 20);
+
+    clearTimeout(window.emailToastTimer);
+    window.emailToastTimer = setTimeout(closeEmailToast, 7000);
+}
+
+function closeEmailToast() {
+    const toast = document.getElementById("emailToastBackdrop");
+    if (toast) {
+        toast.classList.remove("show");
+    }
+}
+
+document.querySelectorAll(".js-contact-email").forEach(function(el) {
+    el.addEventListener("click", triggerEmailReroute);
+});
 
 </script>
 

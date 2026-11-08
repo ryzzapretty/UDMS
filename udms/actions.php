@@ -6,12 +6,30 @@ $p=perms($d,$u); $code=$d['document_id']; $t=$d['title']; $back="document_view.p
 try{ switch($act){
  case 'submit': if(!$p['submit']) throw new Exception('You cannot submit this document.'); submit_doc($id,$code,$t); flash('success',"$code submitted for review."); break;
  case 'review': if(!$p['review']) throw new Exception('You are not authorized to review this student request.');
-   $dec=$_POST['decision']??''; $cm=trim($_POST['comments']??''); $map=['approve'=>['Approved','Approved','approved'],'reject'=>['Rejected','Rejected','rejected'],'revise'=>['Returned for Revision','Revision Requested','returned for revision']];
-   if(!isset($map[$dec])) throw new Exception('Unknown decision.'); if($dec!=='approve'&&$cm==='') throw new Exception('A comment is required.');
-   [$ns,$al,$verb]=$map[$dec]; q("UPDATE documents SET status=?,approved_at=".($dec==='approve'?'NOW()':'approved_at')." WHERE id=?",[$ns,$id]);
-   q("INSERT INTO document_reviews(document_id,reviewer_id,action,comments) VALUES(?,?,?,?)",[$id,$u['id'],$al,$cm]);
-   log_act("Document $verb",$id,"$al: $code".($cm?" - $cm":'')); notify($d['uploaded_by'],"Your document $code \"$t\" was $verb.".($cm?" Comment: $cm":''),$link);
+   $dec=$_POST['decision']??''; $cm=trim($_POST['comments']??'');
+   $map=[
+     'approve'=>['Approved','Approved','approved'],
+     'late_approve'=>['Approved','Approved as Delayed/Late Submitted','approved as delayed / late submission'],
+     'reject'=>['Rejected','Rejected','rejected'],
+     'revise'=>['Returned for Revision','Revision Requested','returned for revision']
+   ];
+   if(!isset($map[$dec])) throw new Exception('Unknown decision.');
+   if($dec!=='approve'&&$dec!=='late_approve'&&$cm==='') throw new Exception('A comment is required.');
+   [$ns,$al,$verb]=$map[$dec];
+   $isLateSql = ($dec === 'late_approve') ? ", is_late=1, submission_timing='Delayed / Late Submitted'" : "";
+   q("UPDATE documents SET status=?,approved_at=".($ns==='Approved'?'NOW()':'approved_at')."$isLateSql WHERE id=?",[$ns,$id]);
+   $reviewComment = $cm ?: ($dec === 'late_approve' ? 'Accepted and approved as delayed / late submission by professor.' : 'Reviewed and approved by faculty.');
+   q("INSERT INTO document_reviews(document_id,reviewer_id,action,comments) VALUES(?,?,?,?)",[$id,$u['id'],$al,$reviewComment]);
+   log_act("Document $verb",$id,"$al: $code".($cm?" - $cm":'')); notify($d['uploaded_by'],"Your document $code \"$t\" was $verb by professor.".($cm?" Comment: $cm":''),$link);
    flash('success',"$code $verb."); break;
+ case 'mark_late':
+   if($u['role']!=='Faculty' && $u['role']!=='Admin') throw new Exception('Only professors or administrators can mark documents as delayed/late.');
+   $cm = trim($_POST['comments'] ?? 'Marked as Delayed / Late Submitted by professor.');
+   q("UPDATE documents SET is_late=1, submission_timing='Delayed / Late Submitted' WHERE id=?", [$id]);
+   q("INSERT INTO document_reviews(document_id,reviewer_id,action,comments) VALUES(?,?,?,?)", [$id, $u['id'], 'Marked as Delayed/Late Submitted', $cm]);
+   log_act('Marked as Delayed/Late', $id, "Professor {$u['full_name']} marked $code as Delayed / Late Submitted: $cm");
+   notify($d['uploaded_by'], "Your submission $code \"$t\" was marked as Delayed / Late Submitted by {$u['full_name']}. Comment: $cm", $link);
+   flash('warning', "$code has been marked as Delayed / Late Submitted."); break;
  case 'archive': if(!$p['archive']) throw new Exception('You cannot archive this document.');
    q("UPDATE documents SET prev_status=status,status='Archived',archived_at=NOW(),archived_by=? WHERE id=?",[$u['id'],$id]);
    log_act('Document archived',$id,"Archived $code"); if($d['uploaded_by']!=$u['id']) notify($d['uploaded_by'],"Your document $code \"$t\" was archived.",$link); flash('success',"$code moved to the archive."); break;

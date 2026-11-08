@@ -1,12 +1,10 @@
 <?php require 'config.php'; require_role('Admin','Faculty','Student'); $u=me(); $title='Profile';
-$deps=q("SELECT * FROM departments ORDER BY department_name")->fetchAll();
+$deps=q("SELECT * FROM departments ORDER BY id")->fetchAll();
 if($_SERVER['REQUEST_METHOD']==='POST'){ csrf_check();
-  try{ if(($_POST['act']??'')==='profile'){ $n=trim($_POST['full_name']??''); $em=trim($_POST['email']??''); $dep=(int)($_POST['department_id']??0)?:null;
+  try{ if(($_POST['act']??'')==='profile'){ $n=trim($_POST['full_name']??''); $em=trim($_POST['email']??'');
       if(strlen($n)<3) throw new Exception('Enter your full name.'); if(!filter_var($em,FILTER_VALIDATE_EMAIL)) throw new Exception('Enter a valid email.');
       if(q("SELECT 1 FROM users WHERE email=? AND id<>?",[$em,$u['id']])->fetch()) throw new Exception('That email is already used.');
-      if($u['role']!=='Admin'&&$dep&&!q("SELECT 1 FROM departments WHERE id=?",[$dep])->fetch()) throw new Exception('Invalid department.');
-      if($u['role']!=='Admin') $dep=$dep?:$u['department_id']; else $dep=$dep?:$u['department_id'];
-      q("UPDATE users SET full_name=?,email=?,department_id=? WHERE id=?",[$n,$em,$dep,$u['id']]); log_act('Profile updated',null,'Updated own profile'); flash('success','Profile updated.'); }
+      q("UPDATE users SET full_name=?,email=? WHERE id=?",[$n,$em,$u['id']]); log_act('Profile updated',null,'Updated own profile'); flash('success','Profile updated.'); }
     elseif(($_POST['act']??'')==='password'){ $cur=$_POST['current']??''; $new=$_POST['password']??'';
       if(!password_verify($cur,$u['password'])) throw new Exception('Current password is incorrect.');
       if(strlen($new)<8||!preg_match('/[A-Za-z]/',$new)||!preg_match('/\d/',$new)) throw new Exception('New password needs 8+ characters with letters and numbers.');
@@ -19,7 +17,10 @@ include 'includes/header.php'; ?>
  <div class="col-md-6"><label class="form-label">Username</label><input class="form-control" value="<?=e($u['username'])?>" disabled></div><div class="col-md-6"><label class="form-label">Role</label><input class="form-control" value="<?=e($u['role'])?>" disabled></div>
  <div class="col-12"><label class="form-label">Full Name</label><input name="full_name" class="form-control" required value="<?=e($u['full_name'])?>"></div>
  <div class="col-md-6"><label class="form-label">Email</label><input type="email" name="email" class="form-control" required value="<?=e($u['email'])?>"></div>
- <div class="col-md-6"><label class="form-label">Department</label><select name="department_id" class="form-select"><?php foreach($deps as $c) echo '<option value="'.$c['id'].'" '.($u['department_id']==$c['id']?'selected':'').'>'.e($c['department_name']).'</option>'; ?></select></div>
+ <div class="col-md-6"><label class="form-label">Grade Level</label><?php
+   $curGrade = 'None';
+   foreach($deps as $c){ if($u['department_id']==$c['id']){ $curGrade = $c['department_name']; break; } }
+ ?><input class="form-control" value="<?=e($curGrade)?>" disabled readonly style="background-color:#e9ecef;cursor:not-allowed;"><div class="form-text text-muted">Grade level is assigned by administration and cannot be edited.</div></div>
  <div class="col-12"><label class="form-label">Student / Employee ID</label><input class="form-control" value="<?=e($u['id_number'])?>" disabled></div>
  <div class="col-12"><button class="btn btn-primary">Save Profile</button></div></div></form></div>
 <div class="col-lg-5"><form method="post" class="card border-0 shadow-sm"><div class="card-body"><?=csrf_field()?><input type="hidden" name="act" value="password"><h5>Change password</h5>

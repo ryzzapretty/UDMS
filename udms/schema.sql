@@ -9,7 +9,11 @@ CREATE TABLE IF NOT EXISTS users(
  email VARCHAR(150) NOT NULL UNIQUE, password VARCHAR(255) NOT NULL,
  role ENUM('Admin','Faculty','Student','Guest') NOT NULL DEFAULT 'Student',
  department_id INT NULL, id_number VARCHAR(50) NULL,
- status ENUM('Active','Inactive','Pending') NOT NULL DEFAULT 'Pending',
+ status ENUM('Active','Inactive','Pending','Archived') NOT NULL DEFAULT 'Pending',
+ storage_limit INT NOT NULL DEFAULT 20,
+ subscription_tier ENUM('Free','Pro') NOT NULL DEFAULT 'Free',
+ subscription_expires_at DATETIME NULL,
+ archived_at DATETIME NULL,
  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
  FOREIGN KEY(department_id) REFERENCES departments(id) ON DELETE SET NULL) ENGINE=InnoDB;
 CREATE TABLE IF NOT EXISTS documents(
@@ -51,23 +55,26 @@ CREATE TABLE IF NOT EXISTS notifications(
 -- Initial Seed Data
 -- ========================================================
 
--- Departments
+-- Departments / Grade Levels
 INSERT IGNORE INTO departments (id, department_name, description) VALUES
-(1, 'College of Computer Studies', 'IT and Computer Science'),
-(2, 'College of Engineering', 'Engineering Programs'),
-(3, 'Registrar Office', 'Academic Records and Registrar'),
-(4, 'Administration', 'University Executive Management');
+(1, 'Basic Education', 'Elementary and Junior High School'),
+(2, 'Senior High', 'Senior High School (Grades 11-12)'),
+(3, 'Tertiary', 'College and Higher Education');
 
 -- Categories
 INSERT IGNORE INTO categories (id, category_name, description) VALUES
 (1, 'Academic Records', 'Student transcripts, grades, and clearances'),
 (2, 'Administrative Policies', 'Memorandums and campus policies'),
 (3, 'Curriculum & Syllabus', 'Course syllabi and instructional guides'),
-(4, 'Faculty Clearances', 'Teaching loads and end-of-term requirements');
+(4, 'Faculty Clearances', 'Teaching loads and end-of-term requirements'),
+(5, 'Learning Modules & Lessons', 'Course modules, class lectures, and instructional materials'),
+(6, 'Student Grades & Assessments', 'Grading sheets, quarterly grades, and student assessments');
 
--- Demo Accounts (Passwords: Admin@123, Faculty@123, Student@123)
+-- Demo Accounts (Passwords: Admin@123, Faculty@123, Student@123, Professor@123, Teacher@123)
 INSERT IGNORE INTO users (id, full_name, username, email, password, role, department_id, id_number, status) VALUES
-(1, 'System Administrator', 'admin', 'admin@university.edu', '$2y$10$3HrdSmTWjG7YipRWfBiMC.t1wTw2XI27TX3XxfCHKhhjRSz.CJCCG', 'Admin', 4, 'ADM-001', 'Active'),
+(1, 'System Administrator', 'admin', 'admin@university.edu', '$2y$10$3HrdSmTWjG7YipRWfBiMC.t1wTw2XI27TX3XxfCHKhhjRSz.CJCCG', 'Admin', 3, 'ADM-001', 'Active'),
 (2, 'Prof. John Doe', 'faculty1', 'faculty1@university.edu', '$2y$10$h1OUxF.97SjzY/dTOvPJ0OwBWrraSxMpNPy6k4sBZ7epjrIy5xApK', 'Faculty', 1, 'FAC-001', 'Active'),
-(3, 'Jane Smith', 'student1', 'student1@university.edu', '$2y$10$SNip94tUNOk4SU3..5Up2uU1W6O9zY57VhyIeHULkiOPr1JjRf8HS', 'Student', 1, 'STU-2026-001', 'Active');
+(3, 'Jane Smith', 'student1', 'student1@university.edu', '$2y$10$SNip94tUNOk4SU3..5Up2uU1W6O9zY57VhyIeHULkiOPr1JjRf8HS', 'Student', 2, 'STU-2026-001', 'Active'),
+(4, 'Prof. Maria Santos', 'professor', 'professor@university.edu', '$2y$10$gQ0U88sS0Wq7c5z8eQY0G.0Z2lSgQ4lT/1JbV6.z3zXh2c8Z7G9.W', 'Faculty', 3, 'PROF-2026-001', 'Active'),
+(5, 'Teacher Sarah Reyes', 'teacher', 'teacher@university.edu', '$2y$10$k1OUxF.97SjzY/dTOvPJ0OwBWrraSxMpNPy6k4sBZ7epjrIy5xApK', 'Faculty', 2, 'TCH-2026-002', 'Active');
 
